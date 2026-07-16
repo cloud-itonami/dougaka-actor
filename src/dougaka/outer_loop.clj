@@ -83,19 +83,68 @@
        (map #(str/replace (.getName ^java.io.File %) #"\.edn$" ""))
        sort vec))
 
+(defn published-posts
+  "rkeys of the actor's existing app.bsky.feed.post records + how many were
+  created today — dedup source (a design already announced outside the tick
+  system, e.g. the shotengai-asa operator E2E, must never be re-produced) and
+  the deterministic rate-cap input for the governor's :rate-limited gate.
+  (minidrama loop-hardening `bfc24df` port.)"
+  [pds did today]
+  (let [rs (:records (getx (str pds "/xrpc/com.atproto.repo.listRecords?repo=" did
+                                "&collection=app.bsky.feed.post&limit=100")))]
+    {:rkeys (set (keep (fn [{:keys [uri]}] (last (str/split (str uri) #"/"))) rs))
+     :today (count (filter #(str/starts-with? (str (get-in % [:value :createdAt])) today)
+                           rs))}))
+
 (defn next-design
-  "First catalog design no consumption record has produced yet."
-  [consumed]
-  (let [used (set (keep :episode-id (vals consumed)))]
+  "First catalog design neither a consumption record nor an existing feed
+  post (dedup vs out-of-band announces) has used yet."
+  [consumed published-rkeys]
+  (let [used (into (set (keep :episode-id (vals consumed))) published-rkeys)]
     (first (remove used (catalog-designs)))))
 
+(def lease-ttl-minutes
+  "A consumption record stuck in \"started\" longer than this is a dead lease
+  (crashed chain); the tick becomes consumable again — re-consume overwrites
+  the same rkey, so recovery is idempotent. Override: DOUGAKA_LEASE_TTL_MIN."
+  120)
+
+(defn- lease-expired? [record now-ms ttl-min]
+  (and (= "started" (:status record))
+       (when-let [ts (:createdAt record)]
+         (try (> (- now-ms (.toEpochMilli (java.time.Instant/parse ts)))
+                 (* ttl-min 60000))
+              (catch Exception _ false)))))
+
+(defn open-ticks
+  "Due ticks that are unconsumed OR whose \"started\" lease has expired."
+  [due consumed now-ms ttl-min]
+  (remove (fn [t]
+            (when-let [r (consumed (:id t))]
+              (not (lease-expired? r now-ms ttl-min))))
+          due))
+
+(defn- notify!
+  "Best-effort owner escalation on HOLD (macOS user notification). Never
+  fails the run — the consumption record is the durable escalation fact."
+  [msg]
+  (try (.waitFor (.start (ProcessBuilder.
+                          ^java.util.List
+                          ["osascript" "-e"
+                           (str "display notification \"" msg
+                                "\" with title \"dougaka outer-loop\"")])))
+       (catch Exception _ nil)))
+
 (defn- run-chain!
-  "produce → engine → announce via the existing orchestrator. Returns exit code."
-  [design-slug announce?]
+  "produce → engine → announce via the existing orchestrator. Returns exit code.
+  DOUGAKA_PUBLISHED_TODAY feeds the governor's deterministic rate cap."
+  [design-slug announce? published-today]
   (let [cmd (cond-> ["bb" "scripts/produce-video.bb"
                      "--plan" (str "videos/" design-slug ".edn")]
               announce? (conj "--announce"))
         pb (doto (ProcessBuilder. ^java.util.List cmd) (.inheritIO))]
+    (when published-today
+      (.put (.environment pb) "DOUGAKA_PUBLISHED_TODAY" (str published-today)))
     (.waitFor (.start pb))))
 
 (defn run-once!
@@ -106,24 +155,29 @@
         pub (aozora/aozora-publisher {:pds pds :identity id
                                       :json-write json/write-str
                                       :json-read json/read-str})
+        now-ms (System/currentTimeMillis)
         today (subs (str (java.time.Instant/now)) 0 10)
+        ttl (or (some-> (System/getenv "DOUGAKA_LEASE_TTL_MIN") parse-long)
+                lease-ttl-minutes)
         due (vec (ticks pds today))
         consumed (consumption pds (:did id))
-        open (first (remove #(consumed (:id %)) due))
+        open (first (open-ticks due consumed now-ms ttl))
         ph (or (some-> (System/getenv "DOUGAKA_PHASE") parse-long) 2)
-        announce? (phase/publish-allowed? ph #{:auto-publish})]
+        announce? (phase/publish-allowed? ph #{:auto-publish})
+        pubs (delay (published-posts pds (:did id) today))]
     (cond
       (nil? open)
       {:status :idle :due (count due) :consumed (count consumed)}
 
       :else
-      (let [design (next-design consumed)]
+      (let [design (next-design consumed (:rkeys @pubs))]
         (if-not design
           (do (record-consumption! pub {:tick open :status "held"
                                         :extra {:reason "catalog-exhausted"}})
+              (notify! (str "HOLD " (:id open) " — catalog exhausted"))
               {:status :held :tick (:id open) :reason :catalog-exhausted})
           (do (record-consumption! pub {:tick open :episode-id design :status "started"})
-              (let [exit (run-chain! design announce?)]
+              (let [exit (run-chain! design announce? (:today @pubs))]
                 (if (zero? exit)
                   (do (record-consumption! pub {:tick open :episode-id design :status "done"
                                                 :extra {:phase ph :grant "auto-publish"
@@ -131,6 +185,7 @@
                       {:status :done :tick (:id open) :episode design :announced announce?})
                   (do (record-consumption! pub {:tick open :episode-id design :status "held"
                                                 :extra {:exit exit}})
+                      (notify! (str "HOLD " (:id open) " — chain exit " exit))
                       {:status :held :tick (:id open) :episode design :exit exit})))))))))
 
 (defn -main [& [cmd]]
