@@ -1,4 +1,4 @@
-# com-etzhayyim-dougaka (動画家)
+# dougaka-actor (動画家)
 
 縦型（720x1280）45〜90 秒ショート動画（街歩き / ライフハック / 観察 vlog /
 ミニドキュメンタリー）を定期制作・公開する autonomous actor。企画 → shot list

@@ -85,3 +85,11 @@ containment + independent governor + append-only ledger
 - lease TTL による "started" スタック record の自動 retry（R1）。
 - ON-MESH surface（minidrama `mesh/` 同型の profile/heartbeat guest）は
   意図的に R0 スコープ外。
+
+## 追記 (2026-07-16): org 移設 — etzhayyim/com-etzhayyim-dougaka → gftdcojp/dougaka-actor
+
+オーナー指示により gftdcojp org へ transfer(rename、visibility は org 既定の
+private)。**lexicon NSID(`com.etzhayyim.apps.*`)は既に PDS 上の実 record が
+使っている wire 識別子のため変更しない**(repo のホスト org と lexicon
+namespace は独立 — aozora identity は etzhayyim-rooted のまま)。GitHub の旧
+URL は redirect が残る。

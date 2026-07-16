@@ -1,5 +1,5 @@
 (ns dougaka.run-tests
-  "Test runner for com-etzhayyim-dougaka (new actors ship run_tests.clj, not
+  "Test runner for dougaka-actor (new actors ship run_tests.clj, not
   .sh — per etzhayyim/root CLAUDE.md). Canonical path: `clojure -M:dev:test`
   (cognitect test-runner). This runner: `clojure -M -m dougaka.run-tests`."
   (:require [clojure.test :refer [run-tests]]
