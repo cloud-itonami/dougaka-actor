@@ -1,0 +1,6 @@
+.cpcache/
+.nrepl-port
+/target
+/classes
+# the actor's own Ed25519 identity + produced media — never commit a private key
+.dougaka/

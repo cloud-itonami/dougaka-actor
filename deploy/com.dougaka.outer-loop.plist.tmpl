@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- dougaka outer loop (repo ADR-0001 / superproject ADR-2607162200 Layer B).
+
+     Daily tick consumption: the aozora PDS cron emits creatortick datoms
+     (Layer A; dougaka's registry cadence starts :active? false, so ticks
+     appear only after the owner flips the registry line); this LaunchAgent
+     runs `dougaka.outer-loop` once a day to consume at most one —
+     produce → dougaka engine → announce, behind the DougakaGovernor.
+     Idempotent: an already-consumed tick day exits :idle, so the schedule
+     can be denser than the cadence without double-posting.
+
+     Install (murakumo / minidrama deploy/*.plist.tmpl と同パターン):
+       sed -e "s|@REPO@|<checkout abs path>|g" \
+           -e "s|@ENGINE@|<ai-gftd-dougaka/clj abs path>|g" \
+           -e "s|@PATH@|$PATH|g" \
+         deploy/com.dougaka.outer-loop.plist.tmpl \
+         > ~/Library/LaunchAgents/com.dougaka.outer-loop.plist
+       launchctl load ~/Library/LaunchAgents/com.dougaka.outer-loop.plist
+     Remove:
+       launchctl unload ~/Library/LaunchAgents/com.dougaka.outer-loop.plist
+       rm ~/Library/LaunchAgents/com.dougaka.outer-loop.plist
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.dougaka.outer-loop</string>
+  <key>WorkingDirectory</key><string>@REPO@</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/env</string>
+    <string>clojure</string>
+    <string>-M:dev</string>
+    <string>-m</string>
+    <string>dougaka.outer-loop</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key><string>@PATH@</string>
+    <key>DOUGAKA_ENGINE_DIR</key><string>@ENGINE@</string>
+    <key>DOUGAKA_PHASE</key><string>2</string>
+  </dict>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key><integer>10</integer>
+    <key>Minute</key><integer>30</integer>
+  </dict>
+  <key>StandardOutPath</key><string>@REPO@/.dougaka/outer-loop.log</string>
+  <key>StandardErrorPath</key><string>@REPO@/.dougaka/outer-loop.err.log</string>
+</dict>
+</plist>

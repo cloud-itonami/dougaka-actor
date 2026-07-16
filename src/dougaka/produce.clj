@@ -1,0 +1,106 @@
+(ns dougaka.produce
+  "Plan-production entrypoint — run ONE video theme through the actor
+  (VideoLLM proposal → DougakaGovernor → commit | hold) and, on :commit, emit
+  the committed plan EDN to `.dougaka/videos/<episode-id>.edn` — the work
+  order the dougaka engine consumes (`dougaka.pipeline` in
+  gftdcojp/ai-gftd-dougaka, ADR-2607071500). scripts/produce-video.bb chains
+  produce → engine → announce.
+
+  Governor doctrine is unchanged: a HOLD prints the violation basis and exits
+  1 — no plan file is written for a rejected video.
+
+  Usage: clojure -M:dev -m dougaka.produce <theme> [episode-id] [duration]
+         clojure -M:dev -m dougaka.produce --from videos/<slug>.edn
+           (hand-authored design — STILL censored by the DougakaGovernor via a
+            design-advisor: 手書き設計も同じ検閲を通る。videos/*.edn は
+            Datomic/Datascript tx-data として保存されている (wrap-map,
+            ns=video) — read-design が :video/ 名前空間を剥がし blob 化された
+            :video/scenes を元の入れ子データへ戻す)
+  Env:   DOUGAKA_USE_LLM=1     use the Murakumo LLM advisor (deploy's wiring)
+         DOUGAKA_OLLAMA_URL / DOUGAKA_OLLAMA_MODEL   as in dougaka.deploy"
+  (:require [clojure.edn :as edn]
+            [clojure.java.io :as io]
+            [langgraph.graph :as g]
+            [dougaka.advisor :as advisor]
+            [dougaka.deploy :as deploy]
+            [dougaka.operation :as op]
+            [dougaka.publisher :as publisher]
+            [dougaka.store :as store])
+  (:gen-class))
+
+(defn- unblob [v]
+  (if (string? v)
+    (try (let [parsed (edn/read-string v)] (if (coll? parsed) parsed v))
+         (catch Exception _ v))
+    v))
+
+(defn read-design
+  "videos/<slug>.edn is a Datomic/Datascript tx-data vector
+  ([{:db/id -1 :video/... ...}], wrap-map ns=video) — reconstitute the
+  original bare design map (strip :db/id + :video/ namespace, unblob nested
+  collections like :scenes)."
+  [path]
+  (let [tx (edn/read-string (slurp path))]
+    (into {} (map (fn [[k v]] [(keyword (name k)) (unblob v)]))
+          (dissoc (first tx) :db/id))))
+
+(defn design-advisor
+  "Advisor that proposes a fixed hand-authored design (videos/*.edn) —
+  the DougakaGovernor censors it exactly like a VideoLLM proposal."
+  [design]
+  (reify advisor/Advisor
+    (-plan [_ _ _]
+      {:summary (str "hand-authored design: " (:title design))
+       :rationale "videos/ catalog design (operator-authored)"
+       :episode (select-keys design [:title :logline :scenes])
+       :effect :production
+       :confidence 0.9})))
+
+(defn produce-plan!
+  "Run one theme through the actor. Returns
+  {:disposition :commit|:hold :plan <record|nil> :basis [...]}."
+  [{:keys [theme episode-id duration advisor phase]
+    :or {phase 1}}]
+  (let [s (store/seed-db)
+        actor (op/build s (cond-> {:publisher (publisher/mock-publisher)}
+                            advisor (assoc :advisor advisor)))
+        r (g/run* actor {:request {:op :episode/plan :episode-id episode-id
+                                   :theme theme :duration-target duration}
+                         :context {:actor-id "dougaka" :phase phase}}
+                  {:thread-id episode-id})
+        disposition (get-in r [:state :disposition])]
+    {:disposition disposition
+     :plan (store/episode s episode-id)
+     :basis (when (= :hold disposition)
+              (-> (store/ledger s) last :basis))}))
+
+(defn -main [& [theme episode-id duration]]
+  (when-not (and theme (seq theme))
+    (binding [*out* *err*]
+      (println "usage: clojure -M:dev -m dougaka.produce <theme>|--from <edn> [episode-id] [duration]"))
+    (System/exit 1))
+  (let [design (when (= "--from" theme)
+                 (read-design episode-id))
+        episode-id (if design
+                     (:episode-id design)
+                     (or episode-id (str "v-" (System/currentTimeMillis))))
+        adv (cond
+              design (design-advisor design)
+              (= "1" (System/getenv "DOUGAKA_USE_LLM"))
+              (advisor/llm-advisor (deploy/ollama-chat-model) {:max-tokens 1024}))
+        {:keys [disposition plan basis]}
+        (produce-plan! {:theme (if design (:title design) theme)
+                        :episode-id episode-id
+                        :duration (some-> duration parse-long)
+                        :advisor adv})]
+    (if (= :commit disposition)
+      (let [f (io/file ".dougaka/videos" (str episode-id ".edn"))]
+        (io/make-parents f)
+        (spit f (pr-str plan))
+        (println "disposition: commit")
+        (println "plan       :" (str f))
+        (println "title      :" (:title plan))
+        (println "shots      :" (:shots plan) "duration:" (:duration plan) "s"))
+      (do (println "disposition: hold")
+          (println "basis      :" (pr-str basis))
+          (System/exit 1)))))
