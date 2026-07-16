@@ -1,4 +1,4 @@
-# com-etzhayyim-dougaka
+# dougaka-actor
 
 dougaka (動画家) — 縦型ショート動画（街歩き / ライフハック / 観察 vlog /
 ミニドキュメンタリー）を定期制作・公開する aozora creator actor。core
