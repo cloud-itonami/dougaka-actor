@@ -59,14 +59,18 @@
 (defn produce-plan!
   "Run one theme through the actor. Returns
   {:disposition :commit|:hold :plan <record|nil> :basis [...]}."
-  [{:keys [theme episode-id duration advisor phase]
+  [{:keys [theme episode-id duration advisor phase published-today]
     :or {phase 1}}]
   (let [s (store/seed-db)
         actor (op/build s (cond-> {:publisher (publisher/mock-publisher)}
                             advisor (assoc :advisor advisor)))
         r (g/run* actor {:request {:op :episode/plan :episode-id episode-id
                                    :theme theme :duration-target duration}
-                         :context {:actor-id "dougaka" :phase phase}}
+                         :context (cond-> {:actor-id "dougaka" :phase phase}
+                                    ;; deterministic rate-cap double-check —
+                                    ;; the outer loop passes today's real post
+                                    ;; count (minidrama hardening port).
+                                    published-today (assoc :published-today published-today))}
                   {:thread-id episode-id})
         disposition (get-in r [:state :disposition])]
     {:disposition disposition
@@ -92,7 +96,9 @@
         (produce-plan! {:theme (if design (:title design) theme)
                         :episode-id episode-id
                         :duration (some-> duration parse-long)
-                        :advisor adv})]
+                        :advisor adv
+                        :published-today (some-> (System/getenv "DOUGAKA_PUBLISHED_TODAY")
+                                                 parse-long)})]
     (if (= :commit disposition)
       (let [f (io/file ".dougaka/videos" (str episode-id ".edn"))]
         (io/make-parents f)
