@@ -5,7 +5,7 @@
  :deps {org.clojure/clojure {:mvn/version "1.12.0"}
         org.clojure/data.json {:mvn/version "2.5.1"} ; aozora publish + LLM json
         io.github.kotoba-lang/langchain
-        {:git/sha "5f51481af47d5dad9b812c6298b5a66dc6fbb179"}
+        {:git/sha "06a27bf4efef1efe758042c4c5f26500b2c56b30"}
         io.github.kotoba-lang/langgraph
         {:local/root "../../kotoba-lang/langgraph"}}
  :aliases
