@@ -1,8 +1,12 @@
 (ns dougaka.store-contract-test
   "MemStore ≡ DatomicStore — the same video + ledger facts committed to both
   backends must read back identically (the Store is a swap, not a rewrite)."
-  (:require [clojure.test :refer [deftest is testing]]
-            [dougaka.store :as store]))
+  (:require [clojure.java.io :as io]
+            [clojure.test :refer [deftest is testing]]
+            [dougaka.store :as store]
+            [langchain.edn-persist :as edn-persist])
+  (:import [java.nio.file Files]
+           [java.nio.file.attribute FileAttribute]))
 
 (deftest mem-and-datomic-stores-agree
   (doseq [s [(store/seed-db) (store/datomic-store)]]
@@ -20,3 +24,19 @@
   (doseq [s [(store/seed-db) (store/datomic-store)]]
     (dotimes [i 5] (store/append-ledger! s {:t :fact :i i}))
     (is (= [0 1 2 3 4] (mapv :i (store/ledger s))))))
+
+(deftest repository-backed-store-restores-after-restart
+  (let [dir (.toFile (Files/createTempDirectory
+                      "dougaka-repository-" (make-array FileAttribute 0)))
+        file (io/file dir "state.edn")
+        environment {"KOTOBA_REPOSITORY_STATE_FILE" (.getPath file)}
+        open-store #(store/datomic-store
+                     (edn-persist/configured-persist environment
+                                                     "actor/dougaka"))
+        first-process (open-store)]
+    (store/commit-episode! first-process "restart-1"
+                           {:episode-id "restart-1" :title "restored"})
+    (store/append-ledger! first-process {:t :committed :episode "restart-1"})
+    (let [second-process (open-store)]
+      (is (= "restored" (:title (store/episode second-process "restart-1"))))
+      (is (= [:committed] (mapv :t (store/ledger second-process)))))))

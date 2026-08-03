@@ -15,9 +15,12 @@
          clojure -M:dev -m dougaka.deploy register-handle
          clojure -M:dev -m dougaka.deploy create-account
   Env:   DOUGAKA_OLLAMA_URL (default http://127.0.0.1:11434)
-         DOUGAKA_OLLAMA_MODEL (default gemma-4-E4B qat)"
+         DOUGAKA_OLLAMA_MODEL (default gemma-4-E4B qat)
+         KOTOBA_REPOSITORY_STATE_FILE (required editable state.edn)
+         KOTOBA_REPOSITORY_STREAM (optional; default actor/dougaka)"
   (:require [clojure.data.json :as json]
             [clojure.string :as str]
+            [langchain.edn-persist :as edn-persist]
             [langchain.model :as model]
             [langgraph.graph :as g]
             [dougaka.advisor :as advisor]
@@ -137,7 +140,8 @@
   (let [[theme dur] (if (seq args) args ["商店街の朝、開店前の音" nil])
         chat    (ollama-chat-model)
         adv     (advisor/llm-advisor chat {:max-tokens 1024})
-        s       (store/seed-db)
+        s       (store/datomic-store
+                 (edn-persist/required-persist-from-env "actor/dougaka"))
         pub     (publisher/mock-publisher)
         actor   (op/build s {:advisor adv :publisher pub})
         eid     "deploy-1"
