@@ -78,6 +78,11 @@
   "DatomicStore on the in-process langchain.db EAVT backend (verifiable
   offline, no network). For the kotoba-server pod (kotobase.net), bind the
   same record to langchain.kotoba-db/kotoba-api — same record, different
-  :db-api (see docs/adr/0001-architecture.md)."
-  []
-  (->DatomicStore d/api (d/create-conn schema)))
+  :db-api (see docs/adr/0001-architecture.md).
+
+  PERSIST is an optional sealed append/read port. Remote storage receives the
+  transaction stream; this process hydrates it and executes every query
+  locally."
+  ([] (datomic-store nil))
+  ([persist]
+   (->DatomicStore d/api (d/create-conn schema persist))))
