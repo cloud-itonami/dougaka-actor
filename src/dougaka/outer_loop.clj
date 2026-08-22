@@ -165,7 +165,7 @@
   "produce → engine → announce via the existing orchestrator. Returns exit code.
   DOUGAKA_PUBLISHED_TODAY feeds the governor's deterministic rate cap."
   [design-slug announce? published-today]
-  (let [cmd (cond-> ["nbb" "scripts/produce-video.cljs"
+  (let [cmd (cond-> ["nbb" "--classpath" "src" "scripts/produce-video.cljs"
                      "--plan" (str "videos/" design-slug ".edn")]
               announce? (conj "--announce"))
         pb (doto (ProcessBuilder. ^java.util.List cmd) (.inheritIO))]

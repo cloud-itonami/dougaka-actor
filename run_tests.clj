@@ -9,7 +9,8 @@
             [dougaka.video-designs-test]
             [dougaka.topics-test]
             [dougaka.deploy-test]
-            [dougaka.advisor-repair-test])
+            [dougaka.advisor-repair-test]
+            [dougaka.chain-test])
   (:gen-class))
 
 (defn -main [& _args]
@@ -20,6 +21,7 @@
              'dougaka.video-designs-test
              'dougaka.topics-test
              'dougaka.deploy-test
-             'dougaka.advisor-repair-test)]
+             'dougaka.advisor-repair-test
+             'dougaka.chain-test)]
     (when (pos? (+ (:fail res 0) (:error res 0)))
       (System/exit 1))))
