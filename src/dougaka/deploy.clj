@@ -21,6 +21,8 @@
          KOTOBA_REPOSITORY_STATE_FILE (required editable state.edn)
          KOTOBA_REPOSITORY_STREAM (optional; default actor/dougaka)"
   (:require [clojure.data.json :as json]
+            [clojure.edn :as edn]
+            [clojure.java.io :as io]
             [clojure.string :as str]
             [langchain.edn-persist :as edn-persist]
             [langchain.model :as model]
@@ -64,56 +66,125 @@
 
 (defn- env [k] (let [v (System/getenv k)] (when-not (str/blank? v) v)))
 
+(defn read-llm-config
+  "resources/llm.edn — the repo's explicit model selection, or nil when the
+  file is absent or unreadable (then the alias decides). An explicit choice
+  lives in data next to the reason it was made, not in a code default."
+  []
+  (try (some-> (io/resource "llm.edn") slurp edn/read-string)
+       (catch Exception _ nil)))
+
+(def default-max-tokens
+  "Plan budget when nothing chose one. A 9-shot EDN plan is ~600 tokens."
+  1024)
+
 (defn resolve-chat-endpoint
-  "Resolution order (CLAUDE.md 'LLM モデル選択'):
+  "Resolution order (CLAUDE.md 'LLM モデル選択', + the repo's explicit choice):
    ① env override — DOUGAKA_LLM_URL / DOUGAKA_OLLAMA_URL (+ DOUGAKA_LLM_MODEL)
-   ② `murakumo-main` alias → {:endpoint :alias-for}
-   ③ endpoint-only fallback (no model name baked)
-  Returns {:endpoint :model :source}. `alias-fn` is injectable for tests and
-  takes the alias URL, returning the parsed alias map or nil."
+   ② resources/llm.edn — an explicit, reasoned selection checked into the repo
+   ③ `murakumo-main` alias → {:endpoint :alias-for}
+   ④ endpoint-only fallback (no model name baked)
+  Returns {:endpoint :model :max-tokens :thinking? :source}. `alias-fn` (takes the alias
+  URL, returns the parsed map or nil) and `config` are injectable for tests."
   ([] (resolve-chat-endpoint {:alias-fn (fn [url]
                                           (try (let [{:keys [status body]} (jvm-http-fn {:url url :method :get})]
                                                  (when (= 200 status)
                                                    (json/read-str body :key-fn keyword)))
-                                               (catch Exception _ nil)))}))
-  ([{:keys [alias-fn]}]
+                                               (catch Exception _ nil)))
+                              :config (read-llm-config)}))
+  ([{:keys [alias-fn config]}]
    (let [override-url (or (env "DOUGAKA_LLM_URL")
                           (some-> (env "DOUGAKA_OLLAMA_URL")
-                                  (str "/v1/chat/completions")))]
+                                  (str "/v1/chat/completions")))
+         max-tokens (or (some-> (env "DOUGAKA_LLM_MAX_TOKENS") parse-long)
+                        (:max-tokens config)
+                        default-max-tokens)
+         ;; reasoning is OFF unless the config says otherwise; see
+         ;; thinking-off-http-fn for the measurement behind the default
+         thinking? (boolean (if (contains? (or config {}) :thinking?)
+                              (:thinking? config)
+                              (= "1" (env "DOUGAKA_LLM_THINKING"))))]
      (cond
        override-url
        {:endpoint override-url
         :model (or (env "DOUGAKA_LLM_MODEL") (env "DOUGAKA_OLLAMA_MODEL") "murakumo-main")
+        :max-tokens max-tokens
+        :thinking? thinking?
         :source :env}
+
+       (and (map? config) (string? (:endpoint config)) (seq (:endpoint config)))
+       {:endpoint (:endpoint config)
+        :model (or (env "DOUGAKA_LLM_MODEL") (:model config) "murakumo-main")
+        :max-tokens max-tokens
+        :thinking? thinking?
+        :source :config}
 
        :else
        (let [a (when alias-fn (alias-fn alias-url))]
          (if (and (map? a) (string? (:endpoint a)) (seq (:endpoint a)))
            {:endpoint (:endpoint a)
             :model (or (env "DOUGAKA_LLM_MODEL") (:alias-for a) "murakumo-main")
+            :max-tokens max-tokens
+            :thinking? thinking?
             :source :alias}
-           endpoint-fallback))))))
+           (assoc endpoint-fallback :max-tokens max-tokens :thinking? thinking?)))))))
+
+(defn thinking-off-http-fn
+  "Wrap an http-fn so the chat body carries
+  `chat_template_kwargs.enable_thinking=false`.
+
+  langchain's openai-request-body emits model / messages / max_tokens / tools
+  and nothing else, so the Qwen switch has to ride in here. Why it matters,
+  measured 2026-08-22 on qwen3.8-27b-fastmtp-aggressive: with thinking on, 3
+  of 8 planning calls returned chars=0 stop=length at completion_tokens=2048
+  — the whole budget spent reasoning, no text block, governor :no-actuation.
+  The gateway clamps completion at 2048 whatever max_tokens asks (asked 4096,
+  got finish=length at exactly 2048), so a bigger budget cannot fix it;
+  turning reasoning off does (a plan is ~600 tokens). cloud-itonami-app
+  recorded the same shape on 2026-08-20: 'capping the budget and leaving
+  reasoning on is the same as asking for no answer'."
+  [http-fn]
+  (fn [{:keys [body] :as req}]
+    (http-fn
+     (if (string? body)
+       (try (let [m (json/read-str body)]
+              (assoc req :body (json/write-str
+                                (assoc m "chat_template_kwargs" {"enable_thinking" false}))))
+            (catch Exception _ req))
+       req))))
 
 (defn murakumo-chat-model
   "Build a langchain.model/openai-model against the Murakumo fleet, resolving
   the endpoint and model through `resolve-chat-endpoint`. Refuses non-Murakumo
-  hosts (Rider §2(i)) whatever the resolution said."
+  hosts (Rider §2(i)) whatever the resolution said. `:thinking?` false (the
+  llm.edn default for planning) injects the Qwen no-think switch."
   ([] (murakumo-chat-model (resolve-chat-endpoint)))
-  ([{:keys [endpoint model source]}]
+  ([{:keys [endpoint model source thinking?]}]
    (advisor/assert-murakumo! endpoint)
    (binding [*out* *err*]
-     (println "[dougaka.deploy] llm" (name (or source :unknown)) "→" endpoint "model=" model))
+     (println "[dougaka.deploy] llm" (name (or source :unknown)) "→" endpoint
+              "model=" model "thinking=" (boolean thinking?)))
    (model/openai-model
     {:url        endpoint
      :model      model
      :api-key    (env "MURAKUMO_INFER_TOKEN")
-     :http-fn    jvm-http-fn
+     :http-fn    (if thinking? jvm-http-fn (thinking-off-http-fn jvm-http-fn))
      :json-write json/write-str
      :json-read  #(json/read-str % :key-fn keyword)})))
 
 (def ollama-chat-model
   "Legacy name kept for callers (dougaka.produce); same resolution."
   murakumo-chat-model)
+
+(defn planning-advisor
+  "The real-LLM advisor with the resolved budget: one place decides
+  max-tokens, so produce and deploy cannot drift apart again (they did —
+  both had 1024 as a literal)."
+  ([] (planning-advisor (resolve-chat-endpoint)))
+  ([resolved]
+   (advisor/llm-advisor (murakumo-chat-model resolved)
+                        {:max-tokens (:max-tokens resolved)})))
+
 
 (defn identify-live
   "Live identify test: generate the actor's self-sovereign did:key, then
@@ -184,8 +255,7 @@
   (when (= (first args) "register-handle") (register-handle) (System/exit 0))
   (when (= (first args) "create-account") (create-account) (System/exit 0))
   (let [[theme dur] (if (seq args) args ["商店街の朝、開店前の音" nil])
-        chat    (murakumo-chat-model)
-        adv     (advisor/llm-advisor chat {:max-tokens 1024})
+        adv     (planning-advisor)
         s       (store/datomic-store
                  (edn-persist/required-persist-from-env "actor/dougaka"))
         pub     (publisher/mock-publisher)
