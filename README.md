@@ -9,6 +9,9 @@ order であり、公開は app-aozora `/videos`（`app.aozora.embed.video`、
 ADR-2607071000 経路）。テンプレートは sibling `com-etzhayyim-minidrama`
 （keep in sync）。
 
+**まず動かす → [`docs/operator-quickstart.md`](docs/operator-quickstart.md)**
+（実行した出力だけが書いてある。踏めなかったものは踏めなかったと書いてある）。
+
 設計 正本: superproject
 `90-docs/adr/2607162200-aozora-creator-scheduled-publishing-integration.md`
 （4 層: cadence tick / outer loop / generation / governor auto-publish、
@@ -99,12 +102,13 @@ clojure -M:dev:test   # cognitect test-runner
 clojure -M:dev:run    # offline demo (mock advisor/publisher, MemStore)
 
 # theme 一発でショート動画を製造 (actor→dougaka engine→announce):
-nbb scripts/produce-video.cljs --theme "商店街の朝" --duration 60   # preview (mp4 まで)
-nbb scripts/produce-video.cljs --theme "…" --announce               # 公開 = sign-off
-DOUGAKA_USE_LLM=1 nbb scripts/produce-video.cljs --theme "…"         # 企画を fleet LLM に書かせる（resources/llm.edn）
+nbb --classpath src scripts/produce-video.cljs --theme "商店街の朝" --duration 60   # preview (mp4 まで)
+nbb --classpath src scripts/produce-video.cljs --theme "…" --announce               # 公開 = sign-off
+DOUGAKA_USE_LLM=1 nbb --classpath src scripts/produce-video.cljs --theme "…"         # 企画を fleet LLM に書かせる（resources/llm.edn）
+nbb --classpath src scripts/produce-video.cljs --theme "…" --aspect landscape        # 16:9（既定は 9:16）。--no-burn で字幕を焼かない
 
 # videos/ のカタログ設計から製造 (手書き設計も同じ DougakaGovernor を通る):
-nbb scripts/produce-video.cljs --plan videos/shotengai-asa.edn [--announce]
+nbb --classpath src scripts/produce-video.cljs --plan videos/shotengai-asa.edn [--announce]
 
 # identity (keyed actor):
 clojure -M:dev -m dougaka.deploy create-account    # createAccount (self-CACAO)
@@ -138,7 +142,8 @@ DougakaGovernor + フォーマット不変条件を全数検証される — **g
 - `src/dougaka/publisher.cljc` — Publisher (Mock ‖ dougaka.aozora)
 - `src/dougaka/phase.cljc` — phase 0 draft / 1 unlisted / 2 public+grant
 - `src/dougaka/outer_loop.clj` — tick 消費 outer loop (Layer B)
-- `scripts/produce-video.cljs` — produce → engine → announce orchestrator（nbb）
+- `scripts/produce-video.cljs` — produce → engine → announce orchestrator（nbb。判断は `src/dougaka/chain.cljc`、JVM テストで固定）
+- `docs/operator-quickstart.md` — 歩いた手順（実行した出力だけ）
 - `resources/llm.edn` — 企画 LLM の明示選択（2026-08-22: `qwen3.8-27b-fastmtp-aggressive` @ api.murakumo.cloud、
   thinking off、max-tokens 4096）。無ければ `murakumo-main` alias。実測はファイル冒頭のコメント
 - `topics/backlog.edn` / `topics/README.md` — 企画 Bot の入力（topic 待ち行列 + 設計 schema）
