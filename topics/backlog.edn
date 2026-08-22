@@ -1,0 +1,31 @@
+;; topics/backlog.edn — the topic queue the dougaka 企画 Bot drains.
+;;
+;; One entry per topic. The Bot (loop-yakuwari role :dougaka/episode-planner,
+;; provisioned as a Cloud Itonami workforce Bot) takes the FIRST :open entry,
+;; writes videos/<slug>.edn in the shape topics/README.md shows, and in the
+;; same commit flips this entry to :designed with :design "<slug>". The QA Bot
+;; (:dougaka/qa) flips it back to :open with a :qa-note when the design is
+;; outside the governor's bounds.
+;;
+;; This file is NOT a design: videos/ holds designs only (the nightly loop and
+;; the designs test read every videos/*.edn as one). Keep it here.
+;;
+;; :status   :open | :designed | :rendered | :published
+;; :design   slug of videos/<slug>.edn once :designed
+;; :genre    街歩き | ライフハック | 観察vlog | ミニドキュメンタリー
+{:topics/version 1
+ :topics
+ [{:theme "夜明け前の市場の搬入口" :genre "観察vlog" :status :open
+   :added "2026-08-22"}
+  {:theme "商店街の古い時計屋のシャッターが開くまで" :genre "ミニドキュメンタリー" :status :open
+   :added "2026-08-22"}
+  {:theme "雨上がりの高架下、水たまりに映る看板" :genre "街歩き" :status :open
+   :added "2026-08-22"}
+  {:theme "団地の給水塔の影が一日でどう動くか" :genre "観察vlog" :status :open
+   :added "2026-08-22"}
+  {:theme "自販機の補充トラックを朝から追う" :genre "ミニドキュメンタリー" :status :open
+   :added "2026-08-22"}
+  {:theme "駅の伝言板に残る、誰も消さないチョークの跡" :genre "街歩き" :status :open
+   :added "2026-08-22"}
+  {:theme "コインランドリーの乾燥機が止まる瞬間だけ集めた朝" :genre "観察vlog" :status :open
+   :added "2026-08-22"}]}

@@ -1,7 +1,7 @@
 (ns dougaka.deploy
   "Deploy entrypoint — wires a REAL Murakumo-fleet LLM (langchain.model
-  OpenAI-compatible against the local Ollama) into the dougaka advisor and
-  runs ONE video plan end-to-end.
+  OpenAI-compatible, resolved through the `murakumo-main` alias) into the
+  dougaka advisor and runs ONE video plan end-to-end.
 
   Publication is MockPublisher by default: a real aozora announcement needs
   (a) the actor's did registered on the PDS, (b) phase ≥1 (unlisted) or, for
@@ -14,8 +14,10 @@
          clojure -M:dev -m dougaka.deploy identify-live
          clojure -M:dev -m dougaka.deploy register-handle
          clojure -M:dev -m dougaka.deploy create-account
-  Env:   DOUGAKA_OLLAMA_URL (default http://127.0.0.1:11434)
-         DOUGAKA_OLLAMA_MODEL (default gemma-4-E4B qat)
+  Env:   DOUGAKA_LLM_URL     chat-completions endpoint override (①)
+         DOUGAKA_LLM_MODEL   model id override (①; default follows the alias)
+         DOUGAKA_OLLAMA_URL  legacy: an Ollama base URL (/v1/chat/completions
+                             is appended); same rank as DOUGAKA_LLM_URL
          KOTOBA_REPOSITORY_STATE_FILE (required editable state.edn)
          KOTOBA_REPOSITORY_STREAM (optional; default actor/dougaka)"
   (:require [clojure.data.json :as json]
@@ -34,13 +36,6 @@
             HttpResponse$BodyHandlers])
   (:gen-class))
 
-(def ^:private default-ollama-url
-  (or (System/getenv "DOUGAKA_OLLAMA_URL") "http://127.0.0.1:11434"))
-
-(def ^:private default-ollama-model
-  (or (System/getenv "DOUGAKA_OLLAMA_MODEL")
-      "hf.co/unsloth/gemma-4-E4B-it-qat-GGUF:UD-Q4_K_XL"))
-
 (defn jvm-http-fn
   "langchain.model :http-fn backed by the JDK HTTP client (no dependency)."
   [{:keys [url method headers body]}]
@@ -54,20 +49,71 @@
           resp (.send (HttpClient/newHttpClient) req (HttpResponse$BodyHandlers/ofString))]
       {:status (.statusCode resp) :body (.body resp)})))
 
-(defn ollama-chat-model
-  "Build a langchain.model/openai-model against a Murakumo-fleet Ollama.
-  Refuses non-Murakumo hosts (Rider §2(i))."
-  ([]
-   (ollama-chat-model default-ollama-url default-ollama-model))
-  ([ollama-url ollama-model]
-   (advisor/assert-murakumo! ollama-url)
+(def alias-url
+  "Fleet main model SSoT (ADR-2607173100). A concrete model id is never baked
+  here — switching the fleet's main model is one PUT on this KV entry."
+  "https://api.murakumo.cloud/infer/models/murakumo-main")
+
+(def endpoint-fallback
+  "Endpoint-only fallback when the alias cannot be read: the serving model
+  behind it is still whatever the fleet runs, so the switch still follows.
+  `model` is the alias name, which the worker resolves server-side."
+  {:endpoint "https://infer.murakumo.cloud/v1/chat/completions"
+   :model "murakumo-main"
+   :source :fallback})
+
+(defn- env [k] (let [v (System/getenv k)] (when-not (str/blank? v) v)))
+
+(defn resolve-chat-endpoint
+  "Resolution order (CLAUDE.md 'LLM モデル選択'):
+   ① env override — DOUGAKA_LLM_URL / DOUGAKA_OLLAMA_URL (+ DOUGAKA_LLM_MODEL)
+   ② `murakumo-main` alias → {:endpoint :alias-for}
+   ③ endpoint-only fallback (no model name baked)
+  Returns {:endpoint :model :source}. `alias-fn` is injectable for tests and
+  takes the alias URL, returning the parsed alias map or nil."
+  ([] (resolve-chat-endpoint {:alias-fn (fn [url]
+                                          (try (let [{:keys [status body]} (jvm-http-fn {:url url :method :get})]
+                                                 (when (= 200 status)
+                                                   (json/read-str body :key-fn keyword)))
+                                               (catch Exception _ nil)))}))
+  ([{:keys [alias-fn]}]
+   (let [override-url (or (env "DOUGAKA_LLM_URL")
+                          (some-> (env "DOUGAKA_OLLAMA_URL")
+                                  (str "/v1/chat/completions")))]
+     (cond
+       override-url
+       {:endpoint override-url
+        :model (or (env "DOUGAKA_LLM_MODEL") (env "DOUGAKA_OLLAMA_MODEL") "murakumo-main")
+        :source :env}
+
+       :else
+       (let [a (when alias-fn (alias-fn alias-url))]
+         (if (and (map? a) (string? (:endpoint a)) (seq (:endpoint a)))
+           {:endpoint (:endpoint a)
+            :model (or (env "DOUGAKA_LLM_MODEL") (:alias-for a) "murakumo-main")
+            :source :alias}
+           endpoint-fallback))))))
+
+(defn murakumo-chat-model
+  "Build a langchain.model/openai-model against the Murakumo fleet, resolving
+  the endpoint and model through `resolve-chat-endpoint`. Refuses non-Murakumo
+  hosts (Rider §2(i)) whatever the resolution said."
+  ([] (murakumo-chat-model (resolve-chat-endpoint)))
+  ([{:keys [endpoint model source]}]
+   (advisor/assert-murakumo! endpoint)
+   (binding [*out* *err*]
+     (println "[dougaka.deploy] llm" (name (or source :unknown)) "→" endpoint "model=" model))
    (model/openai-model
-    {:url        (str ollama-url "/v1/chat/completions")
-     :model      ollama-model
-     :api-key    nil
+    {:url        endpoint
+     :model      model
+     :api-key    (env "MURAKUMO_INFER_TOKEN")
      :http-fn    jvm-http-fn
      :json-write json/write-str
      :json-read  #(json/read-str % :key-fn keyword)})))
+
+(def ollama-chat-model
+  "Legacy name kept for callers (dougaka.produce); same resolution."
+  murakumo-chat-model)
 
 (defn identify-live
   "Live identify test: generate the actor's self-sovereign did:key, then
@@ -138,7 +184,7 @@
   (when (= (first args) "register-handle") (register-handle) (System/exit 0))
   (when (= (first args) "create-account") (create-account) (System/exit 0))
   (let [[theme dur] (if (seq args) args ["商店街の朝、開店前の音" nil])
-        chat    (ollama-chat-model)
+        chat    (murakumo-chat-model)
         adv     (advisor/llm-advisor chat {:max-tokens 1024})
         s       (store/datomic-store
                  (edn-persist/required-persist-from-env "actor/dougaka"))
@@ -149,7 +195,7 @@
                  :duration-target (when dur (parse-long dur))}
         r       (g/run* actor {:request req :context {:actor-id "dougaka" :phase 1}}
                          {:thread-id eid})]
-    (println "=== dougaka deploy (real LLM @ Murakumo) ===")
+    (println "=== dougaka deploy (real LLM @ Murakumo, murakumo-main alias) ===")
     (println "theme      :" theme)
     (println "disposition:" (get-in r [:state :disposition]))
     (println "title      :" (:title (store/episode s eid)))

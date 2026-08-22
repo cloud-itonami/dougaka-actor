@@ -6,7 +6,9 @@
             [dougaka.governor-contract-test]
             [dougaka.store-contract-test]
             [dougaka.operation-test]
-            [dougaka.video-designs-test])
+            [dougaka.video-designs-test]
+            [dougaka.topics-test]
+            [dougaka.deploy-test])
   (:gen-class))
 
 (defn -main [& _args]
@@ -14,6 +16,8 @@
              'dougaka.governor-contract-test
              'dougaka.store-contract-test
              'dougaka.operation-test
-             'dougaka.video-designs-test)]
+             'dougaka.video-designs-test
+             'dougaka.topics-test
+             'dougaka.deploy-test)]
     (when (pos? (+ (:fail res 0) (:error res 0)))
       (System/exit 1))))

@@ -87,10 +87,16 @@
 ;; still censors every plan. The model is an INJECTED langchain.model/ChatModel.
 
 (def allowed-infer-hosts
-  "Murakumo-fleet inference hosts only (Rider §2(i))."
+  "Murakumo-fleet inference hosts only (Rider §2(i)).
+
+  The public fleet surface (`infer.murakumo.cloud`, what the `murakumo-main`
+  alias resolves to — ADR-2607173100) and the legacy `*.gftd.ai` aliases are
+  Murakumo too; the LAN entries are the on-site Ollama/llama-server slots."
   #{"127.0.0.1:11434" "localhost:11434"
     "127.0.0.1:4000"  "localhost:4000"
-    "192.168.1.70:4000"})
+    "192.168.1.70:4000"
+    "infer.murakumo.cloud" "api.murakumo.cloud"
+    "qwen-gad.gftd.ai" "gemma-gad.gftd.ai" "gemma-fleet.gftd.ai"})
 
 (defn- host-port [url]
   (when (string? url) (second (re-find #"(?i)^[a-z]+://([^/]+)" url))))
