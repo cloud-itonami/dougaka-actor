@@ -6,13 +6,20 @@
         org.clojure/data.json {:mvn/version "2.5.1"} ; aozora publish + LLM json
         io.github.kotoba-lang/langchain
         {:git/sha "7038bb80ce030cc5a279785512c0e92d09f323e0"}
+        ;; Pinned by sha so the base deps resolve with git alone — the fleet
+        ;; gate ships one repo's tree and has no sibling to point :local/root
+        ;; at (ADR-2607300900; measured 2026-08-23 while adding this repo to
+        ;; gates.edn). :dev below overrides both to the west siblings.
         io.github.kotoba-lang/langgraph
-        {:local/root "../../kotoba-lang/langgraph"}}
+        {:git/url "https://github.com/kotoba-lang/langgraph"
+         :git/sha "d235cef335b7fa3f9d3603acf5dd928f0aaca1a8"}}
  :aliases
  {;; offline workspace dev — pin transitive langchain to local checkout
   :dev {:override-deps
         {io.github.kotoba-lang/langchain
-         {:local/root "../../kotoba-lang/langchain"}}}
+         {:local/root "../../kotoba-lang/langchain"}
+         io.github.kotoba-lang/langgraph
+         {:local/root "../../kotoba-lang/langgraph"}}}
   ;; clojure -M:dev:run → drive one video theme through the actor
   :run {:main-opts ["-m" "dougaka.sim"]}
   :test {:extra-paths ["test"]
