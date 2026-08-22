@@ -30,7 +30,8 @@ HOLD はどの phase でも announce されず、owner へ surface される。�
 unlisted (phase 1) までは grant 無しで自動可。
 low-confidence は block せず `:low-confidence` タグで commit（透明性）。
 生成・合成はこの actor に実装しない — committed plan は dougaka エンジン
-（`gftdcojp/ai-gftd-dougaka/clj` の `dougaka.pipeline`）への発注書。
+（`cloud-itonami/ai-gftd-dougaka/clj` の `dougaka.pipeline`）への発注書。
+企画の上流は loop-yakuwari の `dougaka` Bot 群（`topics/README.md`）。
 
 ## Conventions
 

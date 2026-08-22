@@ -1,7 +1,7 @@
 (ns dougaka.outer-loop
   "Durable outer loop (ADR-2607162200 Layer B): consume ONE production tick
   per run — 1 run = 1 operation, no unbounded inner loops — driving the
-  produce → dougaka engine → announce chain that scripts/produce-video.bb
+  produce → dougaka engine → announce chain that scripts/produce-video.cljs
   already orchestrates. Ported from minidrama.outer-loop (keep in sync).
 
   Tick source (Layer A): the aozora PDS cron emits `creatortick/<slug>/<date>/
@@ -32,7 +32,7 @@
   Env:   DOUGAKA_PHASE        0 draft / 1 unlisted / 2 public (default 2 —
                               ADR-2607162200 scheduled operation)
          DOUGAKA_ENGINE_DIR   ai-gftd-dougaka/clj engine checkout
-                              (produce-video.bb 既定は west sibling)"
+                              (produce-video.cljs 既定は west sibling)"
   (:require [clojure.data.json :as json]
             [clojure.java.io :as io]
             [clojure.string :as str]
@@ -165,7 +165,7 @@
   "produce → engine → announce via the existing orchestrator. Returns exit code.
   DOUGAKA_PUBLISHED_TODAY feeds the governor's deterministic rate cap."
   [design-slug announce? published-today]
-  (let [cmd (cond-> ["bb" "scripts/produce-video.bb"
+  (let [cmd (cond-> ["nbb" "scripts/produce-video.cljs"
                      "--plan" (str "videos/" design-slug ".edn")]
               announce? (conj "--announce"))
         pb (doto (ProcessBuilder. ^java.util.List cmd) (.inheritIO))]

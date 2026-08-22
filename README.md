@@ -4,7 +4,7 @@
 ミニドキュメンタリー）を定期制作・公開する autonomous actor。企画 → shot list
 までを VideoLLM が *proposal* として提案し、**DougakaGovernor が検閲**して
 可決分だけを append-only 台帳に commit する。可決済みプランは dougaka
-エンジン（`gftdcojp/ai-gftd-dougaka/clj` の `dougaka.pipeline`）への work
+エンジン（`cloud-itonami/ai-gftd-dougaka/clj` の `dougaka.pipeline`）への work
 order であり、公開は app-aozora `/videos`（`app.aozora.embed.video`、
 ADR-2607071000 経路）。テンプレートは sibling `com-etzhayyim-minidrama`
 （keep in sync）。
@@ -50,14 +50,31 @@ SOFT → commit + タグ: `:low-confidence`
 | 1 | unlisted | 自動（unlisted preview） |
 | 2 | public | **`:publish`（human）または `:auto-publish`（outer loop standing grant、ADR-2607162200 Layer D）がある run だけ** — grant は台帳 `:publish-grant` に監査記録 |
 
+## Bots が企画を書く（loop-yakuwari `dougaka`、2026-08-22）
+
+制作の上流は Cloud Itonami の workforce Bot が担う。役割は
+`network-awai/loop-yakuwari` の `yakuwari/dougaka.edn` が正本:
+
+| Bot | 読む | 書く |
+|---|---|---|
+| `dougaka/episode-planner`（企画） | `topics/backlog.edn` + `topics/README.md` | `videos/<slug>.edn` + backlog の `:designed` |
+| `dougaka/qa`（検品） | backlog の最新 `:designed` とその設計 | bounds 外なら `:open` に戻す + `:qa-note` |
+| `dougaka/work-catalog`（steward） | engine repo | host 復旧提案 / 「work」の定義 |
+
+Bot の書き込みは held write（承認で着地）。`itonami bots provision` が registry を
+反映し、`itonami bots workforce` で次回 tick を読める。連鎖の下流（render / 採点 /
+announce）は下記 outer loop で、Bot は走らせない。何が足りないかは
+`topics/README.md` 末尾（2026-08-22 実測）。
+
 ## Scheduled outer loop (ADR-2607162200 Layer A/B)
 
 aozora PDS cron が `creatortick/dougaka/<date>/<slot>` を発行（registry
 cadence が `:active? true` の間）→ `dougaka.outer-loop` が 1 run = 1 tick で
 消費。消費 record は自 repo の `com.etzhayyim.apps.dougaka.tick`（rkey
 `<date>-<slot>`、lease 兼用・冪等）。episode は videos/ カタログの未消費
-design を順に採り、chain は `scripts/produce-video.bb`（produce → engine →
-announce）。cadence が inactive の間は getTicks が空 = `:idle` が正常。
+design を順に採り、chain は `scripts/produce-video.cljs`（nbb。produce → engine →
+announce。engine は mp4 / SRT と一緒に `legs.edn` を書き、loop-ka-production の
+`record --legs` がそれを採点する）。cadence が inactive の間は getTicks が空 = `:idle` が正常。
 
 ```bash
 clojure -M:dev -m dougaka.outer-loop          # run once (launchd: deploy/*.plist.tmpl)
@@ -82,11 +99,12 @@ clojure -M:dev:test   # cognitect test-runner
 clojure -M:dev:run    # offline demo (mock advisor/publisher, MemStore)
 
 # theme 一発でショート動画を製造 (actor→dougaka engine→announce):
-bb scripts/produce-video.bb --theme "商店街の朝" --duration 60   # preview (mp4 まで)
-bb scripts/produce-video.bb --theme "…" --announce               # 公開 = sign-off
+nbb scripts/produce-video.cljs --theme "商店街の朝" --duration 60   # preview (mp4 まで)
+nbb scripts/produce-video.cljs --theme "…" --announce               # 公開 = sign-off
+DOUGAKA_USE_LLM=1 nbb scripts/produce-video.cljs --theme "…"         # 企画を murakumo-main に書かせる
 
 # videos/ のカタログ設計から製造 (手書き設計も同じ DougakaGovernor を通る):
-bb scripts/produce-video.bb --plan videos/shotengai-asa.edn [--announce]
+nbb scripts/produce-video.cljs --plan videos/shotengai-asa.edn [--announce]
 
 # identity (keyed actor):
 clojure -M:dev -m dougaka.deploy create-account    # createAccount (self-CACAO)
@@ -120,6 +138,7 @@ DougakaGovernor + フォーマット不変条件を全数検証される — **g
 - `src/dougaka/publisher.cljc` — Publisher (Mock ‖ dougaka.aozora)
 - `src/dougaka/phase.cljc` — phase 0 draft / 1 unlisted / 2 public+grant
 - `src/dougaka/outer_loop.clj` — tick 消費 outer loop (Layer B)
-- `scripts/produce-video.bb` — produce → engine → announce orchestrator
+- `scripts/produce-video.cljs` — produce → engine → announce orchestrator（nbb）
+- `topics/backlog.edn` / `topics/README.md` — 企画 Bot の入力（topic 待ち行列 + 設計 schema）
 - `deploy/com.dougaka.outer-loop.plist.tmpl` — launchd スケジューラ
 - `docs/adr/0001-architecture.md` — repo-local design note

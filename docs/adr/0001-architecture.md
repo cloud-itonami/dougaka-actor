@@ -49,10 +49,10 @@ containment + independent governor + append-only ledger
    HARD gate は不変の escalation 境界 — HOLD はどの phase・どの grant でも
    announce されず owner へ surface される。
 2. **生成・合成は graph 外**。committed plan は dougaka エンジン
-   （`gftdcojp/ai-gftd-dougaka/clj` の `dougaka.pipeline`: plan EDN +
+   （`cloud-itonami/ai-gftd-dougaka/clj` の `dougaka.pipeline`（2026-08 に cloud-itonami org へ）: plan EDN +
    出力 dir → keyframes → ffmpeg → 縦 mp4 + SRT）への発注書。actor 側に
    生成実装を持たない（新規エンジンを書かない — 既存エンジンの消費のみ）。
-   chain は `scripts/produce-video.bb`（produce → engine → announce、
+   chain は `scripts/produce-video.cljs`（nbb、2026-08-22 に .bb から移植。produce → engine → announce、
    エンジン checkout は west sibling 既定 / `DOUGAKA_ENGINE_DIR` 上書き）。
 3. **outer loop = `dougaka.outer-loop`**（1 run = 1 tick 消費、minidrama
    ADR-0002 と同型）: tick は PDS `app.aozora.creator.getTicks?actor=dougaka`
@@ -93,3 +93,24 @@ private)。**lexicon NSID(`com.etzhayyim.apps.*`)は既に PDS 上の実 record 
 使っている wire 識別子のため変更しない**(repo のホスト org と lexicon
 namespace は独立 — aozora identity は etzhayyim-rooted のまま)。GitHub の旧
 URL は redirect が残る。
+
+## 追記 (2026-08-22): 企画は Bot、chain は nbb、engine は legs.edn を書く
+
+superproject ADR-2608221500（MoneyPrinterTurbo 相当の制作ラインを bots 主体で回す）。
+
+- **上流が Bot になった。** `network-awai/loop-yakuwari` の `dougaka` 事業が
+  `:episode-planner`（`topics/backlog.edn` → `videos/<slug>.edn`）/ `:qa`（governor
+  bounds の反証）/ `:work-catalog` の 3 役に分かれ、Cloud Itonami の workforce Bot として
+  provision される。Bot が読む 2 ファイルは `topics/backlog.edn` と `topics/README.md`。
+  `videos/` は設計だけを置く（outer-loop と test が `videos/*.edn` を全部設計として読む）。
+- **`scripts/produce-video.bb` → `scripts/produce-video.cljs`**（ADR-2607173000、script host は
+  nbb のみ）。engine の既定は west sibling `../ai-gftd-dougaka/clj`（cloud-itonami org）、
+  旧 `../../gftdcojp/...` も探す。engine は `clojure -M`（`-M:dev` は workspace 外で douga を
+  解決できない）。
+- **LLM は `murakumo-main` alias 解決**（`dougaka.deploy/resolve-chat-endpoint`: env →
+  alias → endpoint-only fallback）。deprecated な gemma-4-E4B の焼き込みを撤去。
+- **engine `dougaka.pipeline -main` が `<out>/legs.edn` を書く**。loop-ka-production の
+  `record --legs` が読むのはこのファイルで、stdout ではない。
+- 実測: `videos/neko-no-michi.edn` を clean worktree で通して 60.04 s / 720x1280 /
+  h264+aac / 8 shots。legs は placeholder ×8・bed 無し → loop-ka `DEGRADED` exit 10（hold）。
+  generation token が engine に届くまで公開には届かない — これは fleet 側の配線。
