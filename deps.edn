@@ -1,4 +1,4 @@
-{:paths ["src"]
+{:paths ["src" "resources"]
  ;; langgraph brings langchain transitively (both zero-/single-dep,
  ;; all .cljc → portable to JVM / SCI / ClojureScript / GraalVM).
  ;; (2026-07 org-wide *-clj rename: orgs/kotoba-lang/*)

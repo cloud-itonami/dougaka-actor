@@ -91,7 +91,7 @@
         adv (cond
               design (design-advisor design)
               (= "1" (System/getenv "DOUGAKA_USE_LLM"))
-              (advisor/llm-advisor (deploy/ollama-chat-model) {:max-tokens 1024}))
+              (deploy/planning-advisor))
         {:keys [disposition plan basis]}
         (produce-plan! {:theme (if design (:title design) theme)
                         :episode-id episode-id

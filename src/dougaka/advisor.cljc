@@ -126,19 +126,99 @@ seconds. No real-person likenesses, no brands.")
        "Duration target (seconds): " (or duration-target 60) "\n\n"
        "Return ONLY the EDN map now."))
 
+(defn missing-closers
+  "The closing brackets an EDN text is short of, innermost first — counted
+  OUTSIDE strings (a `}` inside a subtitle is text, not structure). Returns
+  \"\" when balanced, nil when there are MORE closers than openers (that is
+  not a truncation and appending cannot fix it)."
+  [s]
+  (loop [cs (seq s) in-str? false esc? false stack ()]
+    (if-let [c (first cs)]
+      (cond
+        in-str? (recur (rest cs) (if (and (not esc?) (= c \")) false true)
+                       (and (not esc?) (= c \\)) stack)
+        (= c \") (recur (rest cs) true false stack)
+        (= c \;) (recur (drop-while #(not= % \newline) cs) false false stack)
+        (#{\{ \[ \(} c) (recur (rest cs) false false (conj stack c))
+        (#{\} \] \)} c) (if (and (seq stack)
+                                 (= (peek stack) ({\} \{ \] \[ \) \(} c)))
+                          (recur (rest cs) false false (pop stack))
+                          nil)
+        :else (recur (rest cs) false false stack))
+      (apply str (map {\{ \} \[ \] \( \)} stack)))))
+
+(defn reclose
+  "Strip the run of closing brackets at the very end of `s` (outside any
+  string, so it can only be structure) and append the closers the remaining
+  text is actually short of. Returns [mended closers] or nil when nothing
+  changes or the prefix has surplus closers.
+
+  Only ever called after the raw text failed to read, so a valid plan is
+  never touched. What it fixes, measured 2026-08-22 on the fleet model with
+  reasoning off: the final closers dropped after a long last subtitle (EOF),
+  and `]`/`}` swapped in the last run (`}]}}` → Unmatched delimiter). Both
+  leave the CONTENT complete; only the tail is wrong, and a model asked to
+  repair it got the tail wrong again."
+  [s]
+  (let [trimmed (str/replace s #"[\s\]\}\)]+$" "")
+        closers (missing-closers trimmed)]
+    (when (and (seq closers) (not= (str trimmed closers) s))
+      [(str trimmed closers) closers])))
+
+(defn parse-plan-edn*
+  "Parse the LLM's EDN plan. Returns {:episode m} or {:error <why>} — the
+  reason is what the repair round sends back to the model, so it is kept
+  rather than collapsed into nil.
+
+  One deterministic mend before giving up: when the reader fails, `reclose`
+  the tail and read again (`:closed` names what the tail became). It never
+  runs on text that read fine."
+  [content]
+  (let [s (-> (str content)
+              (str/replace #"(?s)```[a-zA-Z]*" "")
+              (str/replace "```" ""))
+        candidate (re-find #"(?s)\{.*\}" s)
+        validate (fn [m closed]
+                   (cond
+                     (not (map? m)) {:error "the reply is not a single map"}
+                     (not (string? (:title m))) {:error ":title must be a string"}
+                     (not (sequential? (:scenes m))) {:error ":scenes must be a vector of scene maps"}
+                     (not (every? #(sequential? (:shots %)) (:scenes m)))
+                     {:error "every scene needs a :shots vector"}
+                     :else (cond-> {:episode m} (seq closed) (assoc :closed closed))))
+        read* (fn [text closed]
+                (try (validate (edn/read-string text) closed)
+                     (catch #?(:clj Throwable :cljs :default) e
+                       {:error (str "EDN reader: " #?(:clj (.getMessage ^Throwable e) :cljs (str e)))})))]
+    (if-not candidate
+      {:error "no {...} map found in the reply"}
+      (let [r (read* candidate "")]
+        (if (and (:error r) (str/starts-with? (:error r) "EDN reader"))
+          (if-let [[mended closers] (reclose candidate)]
+            (let [r2 (read* mended closers)]
+              (if (:episode r2) r2 r))
+            r)
+          r)))))
+
 (defn parse-plan-edn
   "Defensively parse the LLM's EDN plan. Any parse failure → nil episode
   (the DougakaGovernor then holds it; the system never breaks on malformed
   model output)."
   [content]
-  (let [s (-> (str content)
-              (str/replace #"(?s)```[a-zA-Z]*" "")
-              (str/replace "```" ""))]
-    (try
-      (when-let [m (some-> (re-find #"(?s)\{.*\}" s) edn/read-string)]
-        (when (and (string? (:title m)) (sequential? (:scenes m)))
-          m))
-      (catch #?(:clj Throwable :cljs :default) _ nil))))
+  (:episode (parse-plan-edn* content)))
+
+(defn repair-prompt
+  "The structured error, sent back once. Measured 2026-08-22 on the fleet
+  model with reasoning off: 2 of 6 first answers were structurally wrong EDN
+  (a stray `:total_duration 60` inside the scenes vector; unbalanced closing
+  brackets) while the content was fine — exactly the class a repair round
+  fixes and a bigger budget does not."
+  [error]
+  (str "Your previous answer was not a valid plan: " error "\n"
+       "Return ONLY the corrected single-line EDN map — same content, valid EDN, "
+       "no prose, no code fences, no extra keys. The shape is "
+       "{:title \"…\" :logline \"…\" :scenes [{:seq 0 :setting \"…\" "
+       ":shots [{:seq 0 :prompt \"…\" :duration 8 :subtitle \"…\"}]}]}"))
 
 (defn llm-advisor
   "Advisor backed by a langchain.model/ChatModel. Sealed: returns a PROPOSAL
@@ -147,17 +227,53 @@ seconds. No real-person likenesses, no brands.")
   ([chat-model gen-opts]
    (reify Advisor
      (-plan [_ _store request]
-       (let [content (:content
-                      (model/-generate chat-model
-                        [{:role :system :content dougaka-system-prompt}
-                         {:role :user   :content (build-prompt request)}]
-                        gen-opts)
-                      {})
-             ep (parse-plan-edn content)]
-         (if ep
-           {:summary (str "videollm plan: " (:title ep))
-            :rationale "LLM plan (Murakumo); governor-censored downstream"
-            :episode ep :effect :production :confidence 0.6}
-           {:summary "videollm output unparseable"
-            :rationale "malformed plan → no episode (governor holds)"
-            :episode nil :effect :noop :confidence 0.1}))))))
+       (let [messages [{:role :system :content dougaka-system-prompt}
+                       {:role :user   :content (build-prompt request)}]
+             out (model/-generate chat-model messages gen-opts)
+             content (:content out "")
+             first-try (parse-plan-edn* content)
+             ;; One repair round, with the structured reason. Not a loop: a
+             ;; second failure is held by the governor and reported, so a
+             ;; model that cannot write EDN today shows up as held runs, not as
+             ;; retries nobody counts.
+             {:keys [episode error repaired? out2]}
+             (if (:episode first-try)
+               first-try
+               (let [out2 (model/-generate chat-model
+                            (conj messages
+                                  {:role :assistant :content (str content)}
+                                  {:role :user :content (repair-prompt (:error first-try))})
+                            gen-opts)
+                     second-try (parse-plan-edn* (:content out2 ""))]
+                 (assoc second-try :repaired? (boolean (:episode second-try))
+                        :out2 out2
+                        :error (or (:error second-try) (:error first-try)))))]
+         (if episode
+           {:summary (str "videollm plan: " (:title episode)
+                          (when repaired? " (repaired once)")
+                          (when-let [c (:closed (if repaired? (dissoc first-try :episode) first-try))]
+                            (str " (closed " (pr-str c) ")")))
+            :rationale (if repaired?
+                         (str "LLM plan (Murakumo), first answer rejected: " (:error first-try)
+                              "; repaired on the second; governor-censored downstream")
+                         "LLM plan (Murakumo); governor-censored downstream")
+            :episode episode :effect :production
+            :confidence (if repaired? 0.5 0.6)}
+           (do
+             ;; Say WHY on stderr. Measured 2026-08-22: the governor held three
+             ;; runs in a row as :no-actuation and nothing said what the model
+             ;; had actually returned — the same prompt parsed fine when called
+             ;; by hand. Keeping the head of the body is what makes the next
+             ;; hold diagnosable instead of a repeat of this one.
+             (let [o (or out2 out) c (str (:content o "")) n (count c)
+                   line (str "[dougaka.advisor] videollm output unparseable after repair;"
+                             " error=" (pr-str error)
+                             " chars=" n " stop=" (pr-str (:stop-reason o))
+                             " usage=" (pr-str (:usage o))
+                             " head=" (pr-str (subs c 0 (min 200 n)))
+                             " tail=" (pr-str (subs c (max 0 (- n 200)))))]
+               #?(:clj (binding [*out* *err*] (println line))
+                  :cljs (js/console.error line)))
+             {:summary (str "videollm output unparseable: " error)
+              :rationale "malformed plan twice → no episode (governor holds)"
+              :episode nil :effect :noop :confidence 0.1})))))))

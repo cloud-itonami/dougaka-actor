@@ -101,7 +101,7 @@ clojure -M:dev:run    # offline demo (mock advisor/publisher, MemStore)
 # theme 一発でショート動画を製造 (actor→dougaka engine→announce):
 nbb scripts/produce-video.cljs --theme "商店街の朝" --duration 60   # preview (mp4 まで)
 nbb scripts/produce-video.cljs --theme "…" --announce               # 公開 = sign-off
-DOUGAKA_USE_LLM=1 nbb scripts/produce-video.cljs --theme "…"         # 企画を murakumo-main に書かせる
+DOUGAKA_USE_LLM=1 nbb scripts/produce-video.cljs --theme "…"         # 企画を fleet LLM に書かせる（resources/llm.edn）
 
 # videos/ のカタログ設計から製造 (手書き設計も同じ DougakaGovernor を通る):
 nbb scripts/produce-video.cljs --plan videos/shotengai-asa.edn [--announce]
@@ -139,6 +139,8 @@ DougakaGovernor + フォーマット不変条件を全数検証される — **g
 - `src/dougaka/phase.cljc` — phase 0 draft / 1 unlisted / 2 public+grant
 - `src/dougaka/outer_loop.clj` — tick 消費 outer loop (Layer B)
 - `scripts/produce-video.cljs` — produce → engine → announce orchestrator（nbb）
+- `resources/llm.edn` — 企画 LLM の明示選択（2026-08-22: `qwen3.8-27b-fastmtp-aggressive` @ api.murakumo.cloud、
+  thinking off、max-tokens 4096）。無ければ `murakumo-main` alias。実測はファイル冒頭のコメント
 - `topics/backlog.edn` / `topics/README.md` — 企画 Bot の入力（topic 待ち行列 + 設計 schema）
 - `deploy/com.dougaka.outer-loop.plist.tmpl` — launchd スケジューラ
 - `docs/adr/0001-architecture.md` — repo-local design note

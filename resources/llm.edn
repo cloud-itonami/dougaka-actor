@@ -1,0 +1,31 @@
+;; resources/llm.edn — which fleet model writes dougaka's video plans.
+;;
+;; This is an EXPLICIT selection (owner, 2026-08-22): the Modal-served
+;; `qwen3.8-27b-fastmtp-aggressive` behind the api.murakumo.cloud gateway,
+;; not the fleet's `murakumo-main` alias. The alias stays the fleet-wide
+;; default and is untouched; this file is what "opting in" looks like for
+;; one consumer. Resolution order in dougaka.deploy/resolve-chat-endpoint:
+;;   ① env DOUGAKA_LLM_URL / DOUGAKA_LLM_MODEL
+;;   ② this file
+;;   ③ the murakumo-main alias
+;;   ④ endpoint-only fallback
+;;
+;; Measured 2026-08-22 against this entry: GET /v1/models lists it; one
+;; chat completion answered FASTMTP_OK in 19 s including the cold start
+;; (Modal scales to zero after 5 min; cold start ~17 s; 95–99 tok/s warm;
+;; 32K context). :max-tokens is the plan budget the owner raised from 1024.
+;; Measured the same day: the gateway clamps completion at 2048 whatever is
+;; asked (max_tokens 4096 → finish=length at exactly 2048), and with
+;; reasoning ON 3 of 8 planning calls spent that whole budget thinking and
+;; returned no text. So :thinking? is false here — a plan is ~600 tokens and
+;; fits with room — and :max-tokens states the intent, not the clamp.
+;;
+;; Delete this file to fall back to the alias. Set :model to nil to keep the
+;; gateway but let the alias choose the model.
+{:llm/version 1
+ :endpoint "https://api.murakumo.cloud/v1/chat/completions"
+ :models-url "https://api.murakumo.cloud/v1/models"
+ :model "qwen3.8-27b-fastmtp-aggressive"
+ :max-tokens 4096
+ :thinking? false
+ :chosen-by "owner 2026-08-22 (murakumo PR #323 / local-murakumo PR #141)"}
