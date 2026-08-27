@@ -95,8 +95,7 @@
   #{"127.0.0.1:11434" "localhost:11434"
     "127.0.0.1:4000"  "localhost:4000"
     "192.168.1.70:4000"
-    "infer.murakumo.cloud" "api.murakumo.cloud"
-    "qwen-gad.gftd.ai" "gemma-gad.gftd.ai" "gemma-fleet.gftd.ai"})
+    "infer.murakumo.cloud" "api.murakumo.cloud"})
 
 (defn- host-port [url]
   (when (string? url) (second (re-find #"(?i)^[a-z]+://([^/]+)" url))))
