@@ -102,9 +102,36 @@
                  the point: forgetting cannot promote a testnet price."}
   {:gate/id :discovery-document
    :gate/met? false
-   :gate/detail "dougaka serves no /.well-known/x402, so x402.nexus cannot read
-                 this book. `nexus.apply/rules-from-document` registers what an
-                 origin publishes about itself and nothing else."}
+   :gate/detail "MEASURED 2026-09-01, and it is not one document away.
+
+                 (1) There is no origin. dougaka.gftd.ai and dougaka.aozora.app
+                 both answer 000 — no DNS, nothing deployed. The appview's
+                 wrangler.jsonc names routes and `main: src/app.cljc`, and that
+                 file does not exist. Serving one path means standing up a
+                 public surface for an actor whose own APP_DESCRIPTION calls it
+                 `a UI-less video-render backend invoked pod-to-pod`.
+
+                 (2) The product is not request-shaped, and x402 v1 is. A
+                 commissioned 45-90 second short is a production job measured in
+                 hours; a gateway that proxies a paid request expects a
+                 response. Selling it over the v1 rail would mean holding an
+                 HTTP request open for a render, which is not a thing that
+                 works.
+
+                 What fits, and what this gate should be replaced by:
+                   a. a REQUEST-shaped SKU dougaka already has — `render` over
+                      /runs and /xrpc turns a timeline into an ffmpeg render
+                      plan and returns it (clj/src/dougaka/graphs/render.cljc,
+                      `plans only`). That is a product that answers in one
+                      request and has a cost this repo can measure.
+                   b. the ASYNC shape x402 v2 already carries —
+                      `operationStatusTemplate`, which murakumo publishes today
+                      as https://murakumo.cloud/x402/operations/{id}. Pay,
+                      receive an operation id, poll.
+
+                 Both are product decisions and both need (1) first. Standing up
+                 a document before either is choosing a payment shape by
+                 accident."}
   {:gate/id :output-license
    :gate/met? false
    :gate/detail "STATED, NOT REVIEWED (2026-09-01). licence.edn now says what a
