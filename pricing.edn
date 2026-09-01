@@ -1,0 +1,115 @@
+;; The price book for dougaka. DATA, not code — ADR-2608110200 決定 3.
+;;
+;; ## Denominated on a TESTNET, on purpose
+;;
+;; Every plan here settles on `base-sepolia`. That is not a placeholder waiting
+;; to be swapped for mainnet — it is the whole point of the file existing today.
+;; A price that can be argued with has to be written down; a price that can be
+;; charged has to pass gates that are not passed. Denominating in testnet USDC
+;; makes the second impossible while the first is true, so this cannot start
+;; earning real value by being forgotten.
+;;
+;; x402.nexus admits `base-sepolia` (nexus.apply/settleable-networks) and
+;; announces it at /.well-known/x402 with `testnets: ["base-sepolia"]`, so a
+;; paid path here can be demonstrated end to end without anyone transferring
+;; value. That is why base-sepolia was added, and this is the first seller to
+;; use it for what it was added for.
+;;
+;; ## The number is a floor, and it was measured, not chosen
+;;
+;; 2,338 credits over 246 finished video-seconds = 9.50 credits/second =
+;; $0.095/second all-in (generation, voice, music, 3D assets, stills), from
+;; GET https://api.murakumo.cloud/infer/runs on 2026-09-01 — a SNAPSHOT of a
+;; live feed that moved from 1,858/186 to 2,338/246 within the same day. The model that
+;; derives it and compares it against measured competitor prices is
+;; `90-docs/system-dynamics/dougaka-unit-economics.cljs` in com-junkawasaki/root,
+;; and it is an OASIS XMILE model so the arithmetic can be re-run rather than
+;; believed.
+;;
+;; Break-even is therefore $0.095/second at that reading. Anything below it sells at a loss on
+;; the compute alone, before anyone is paid for anything else.
+;;
+;; ## What the competitor numbers do and do not say
+;;
+;; fal.ai Wan 2.5 $0.05/s, Kling 2.5 Turbo Pro $0.07/s, Replicate wan-2 $0.09/s,
+;; Replicate top published tier $0.25/s — all read from their own pricing pages
+;; on 2026-09-01. **They are raw generation, not a finished short.** dougaka's
+;; comparable figure is its generation-only rate, $0.0803/s, which sits between
+;; Kling Turbo Pro and Replicate's wan-2. Quoting the all-in $0.0999 against
+;; their $0.05 would be comparing a finished video to a model call.
+;;
+;; ## Margin is not computed here, because it is not computable
+;;
+;; ADR-2608291009 決定 5 defines margin as revenue − cost. Revenue is measured
+;; and it is zero: no catalog entry names this seller. A margin of 0 for
+;; `earned nothing` printing the same as `broke even` is the defect class
+;; CLAUDE.md names, so the model reports MARGIN UNMEASURED and this file quotes
+;; no percentage.
+
+{:pricing/version 1
+ :pricing/currency "USD"
+ :pricing/settles-on "base-sepolia"
+ :pricing/updated "2026-09-01"
+ :pricing/authority "ADR-2608110200 (price as data) / ADR-2608291009 決定 5 (bot P&L)"
+ :pricing/cost-basis
+ {:measured-on "2026-09-01"
+  :source "GET https://api.murakumo.cloud/infer/runs — 124 spend events, account `dougaka`"
+  ;; ⚠ SNAPSHOT。この feed は生きていて、同じ日の数時間で 1,858/186 から
+  ;; 2,338/246 へ動いた。**この数字を引用する前に model を回すこと** ——
+  ;; model は feed を読み、ここには何も焼いていない。
+  :credits 2338
+  :finished-video-seconds 246
+  :credits-per-video-second 9.5041
+  :usd-per-video-second 0.095
+  :generation-only-usd-per-video-second 0.0803
+  :model "90-docs/system-dynamics/dougaka-unit-economics.cljs (com-junkawasaki/root)"}
+
+ :pricing/plans
+ [{:plan/id :per-second
+   :plan/name "Finished vertical short, per second"
+   :plan/status :proposed
+   :plan/settles-on "base-sepolia"
+   :plan/usd-per-video-second 0.15
+   ;; 0.15 and not the ~0.095 floor: the floor is what the compute costs, and a price at
+   ;; the floor funds no re-render, no failed take, and no storage. 0.15 leaves
+   ;; 33% over the measured cost. It is a proposal — the number to argue with,
+   ;; not a rate anyone has agreed.
+   ;; Deliberately no margin percentage: margin needs revenue, revenue is
+   ;; measured at zero, and a ratio computed against a cost alone is a markup,
+   ;; not a margin. `:plan/markup-over-measured-cost` says what it is.
+   :plan/markup-over-measured-cost 0.578
+   :plan/hard-cap {:video-seconds 90}
+   :plan/includes [:generation :voice :music :stills :edit :srt]}
+
+  {:plan/id :per-short
+   :plan/name "One finished short, up to 90 seconds"
+   :plan/status :proposed
+   :plan/settles-on "base-sepolia"
+   :plan/usd 13.50
+   ;; 90 × 0.15. Stated separately because a buyer asking for `a short` is not
+   ;; asking for seconds, and a per-unit price a buyer can check against their
+   ;; own budget is the one that does not get disputed.
+   :plan/hard-cap {:videos 1}}]
+
+ ;; ADR-2608110200 決定 4 の形。**通っていない gate は通っていないと書く。**
+ :pricing/gates
+ [{:gate/id :mainnet-denomination
+   :gate/met? false
+   :gate/detail "settles-on is base-sepolia. Charging real value needs a
+                 deliberate change to `base` here and in every plan, which is
+                 the point: forgetting cannot promote a testnet price."}
+  {:gate/id :discovery-document
+   :gate/met? false
+   :gate/detail "dougaka serves no /.well-known/x402, so x402.nexus cannot read
+                 this book. `nexus.apply/rules-from-document` registers what an
+                 origin publishes about itself and nothing else."}
+  {:gate/id :output-license
+   :gate/met? false
+   :gate/detail "nothing states what a buyer may do with a finished short —
+                 broadcast rights, model/voice provenance, and whether the
+                 governor's approval transfers. Selling before that is selling
+                 an unstated licence."}
+  {:gate/id :availability
+   :gate/met? false
+   :gate/detail "no published statement of how often a commissioned short is
+                 delivered, or what happens when the governor holds one."}]}
