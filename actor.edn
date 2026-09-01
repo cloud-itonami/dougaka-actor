@@ -1,0 +1,40 @@
+;; dougaka (動画家) — the actor manifest.
+;;
+;; ## Why this file did not exist until 2026-09-01
+;;
+;; It was not an oversight with no consequence. `scripts/itonami-actor-pnl.cljs`
+;; folds ADR-2608291009 決定 5 (bot の損益) over the population that holds an
+;; actor.edn, and dougaka is **the fleet's largest consumer of metered credits**
+;; — 1,858 of the 2,484 credits any account has ever spent. Without a manifest
+;; it was outside that population entirely, so the biggest cost in the ledger
+;; was not merely unattributed: it could not be attributed, by construction.
+;;
+;; ## :actor/murakumo-account is the cost-side join
+;;
+;; `:actor/x402-seller` says where revenue would arrive. This says where spend
+;; leaves from, and it is the same kind of declaration for the same reason: the
+;; ledger names accounts, this repo has a name, and nothing joins them unless
+;; somebody writes it down. Measured before and after
+;; (scripts/itonami-actor-pnl.cljs): `KUMO BURN 0 attributed / 2484
+;; unattributed` → `1858 attributed / 626 unattributed`.
+;;
+;; The account name is `dougaka`, a bare ledger account rather than a did:key.
+;; That is what the run feed actually carries for this spender, and writing the
+;; did it *ought* to be would produce a join that matches nothing.
+
+{:actor/id              "dougaka"
+ :handle                "dougaka.aozora.app"
+ :actor/murakumo-account "dougaka"
+
+ ;; Revenue-side join, declared and deliberately not yet true: no catalog entry
+ ;; names this seller. `pricing.edn` is denominated on base-sepolia precisely so
+ ;; that this line cannot start earning real value by accident.
+ :actor/x402-seller     "dougaka"
+
+ :actor/kind            :production
+ :actor/produces        {:format "vertical short (720x1280)"
+                         :duration-seconds [45 90]}
+ :actor/governor        "DougakaGovernor"
+ :actor/engine          "cloud-itonami/ai-gftd-dougaka — dougaka.pipeline"
+ :actor/publishes-to    "app-aozora /videos (app.aozora.embed.video, ADR-2607071000)"
+ :actor/unit-economics  "90-docs/system-dynamics/dougaka-unit-economics.cljs (com-junkawasaki/root)"}
