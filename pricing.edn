@@ -102,7 +102,8 @@
    :plan/settles-on "base-sepolia"
    :plan/usd 0.02
    :plan/request-shaped? true
-   :plan/resource "POST /xrpc/…dougaka.render — timeline in, ffmpeg render plan out"
+   :plan/resource "POST https://dougaka.itonami.cloud/xrpc/cloud.itonami.apps.dougaka.render
+                   — timeline in, ffmpeg render plan out"
    ;; **これが x402 v1 にそのまま乗る唯一の SKU である。**
    ;;
    ;; `clj/src/dougaka/graphs/render.cljc` は純関数で、モデルを 1 つも呼ばず、
@@ -158,6 +159,17 @@
                  file does not exist. Serving one path means standing up a
                  public surface for an actor whose own APP_DESCRIPTION calls it
                  `a UI-less video-render backend invoked pod-to-pod`.
+
+                 The origin to stand up is `dougaka.itonami.cloud`, not the
+                 gftd.ai route: owner instruction 2026-09-01 — gftd.ai is being
+                 pruned. The engine repo moved with it
+                 (cloud-itonami/ai-gftd-dougaka 02e6fbea): the xrpc nsid is
+                 `cloud.itonami.apps.dougaka.render`, the did is
+                 did:web:dougaka.itonami.cloud, and the worker route now names
+                 itonami.cloud. Nothing was renamed that was live — the gftd
+                 route answered 000 and had no deployment behind it — and the
+                 shared magatama @context, which IS live and used by ten
+                 appviews, was deliberately left alone.
 
                  (2) The product is not request-shaped, and x402 v1 is. A
                  commissioned 45-90 second short is a production job measured in
