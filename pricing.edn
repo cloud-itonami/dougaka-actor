@@ -53,6 +53,19 @@
  :pricing/authority "ADR-2608110200 (price as data) / ADR-2608291009 決定 5 (bot P&L)"
  :pricing/licence "licence.edn — 上流 7 モデルを実測した上で買い手に渡す条件"
  :pricing/availability "availability.edn — 稼働条件（約束ではなく実測）"
+
+ ;; 隣接市場（**比較対象ではない**）。Shotstack は *レンダリング* を分単位で売る。
+ ;; dougaka の :render-plan は plan を返すだけで encode しないので、同じものの
+ ;; 値段ではない。ここに置くのは、buyer が「plan だけなら安いはずだ」と考える
+ ;; ときの上限がどこにあるかが分かるようにするため。
+ :pricing/adjacent-market
+ [{:vendor "Shotstack" :product "pay as you go" :usd-per-rendered-minute 0.30
+   :source "https://shotstack.io/pricing/" :read-on "2026-09-01"
+   :comparable :adjacent-render-api
+   :note "レンダリング込みの分単価。plan のみの価格ではない"}
+  {:vendor "Shotstack" :product "subscription" :usd-per-rendered-minute 0.20
+   :source "https://shotstack.io/pricing/" :read-on "2026-09-01"
+   :comparable :adjacent-render-api}]
  :pricing/cost-basis
  {:measured-on "2026-09-01"
   :source "GET https://api.murakumo.cloud/infer/runs — 124 spend events, account `dougaka`"
@@ -83,6 +96,35 @@
    :plan/hard-cap {:video-seconds 90}
    :plan/includes [:generation :voice :music :stills :edit :srt]}
 
+  {:plan/id :render-plan
+   :plan/name "One render plan from one timeline"
+   :plan/status :proposed
+   :plan/settles-on "base-sepolia"
+   :plan/usd 0.02
+   :plan/request-shaped? true
+   :plan/resource "POST /xrpc/…dougaka.render — timeline in, ffmpeg render plan out"
+   ;; **これが x402 v1 にそのまま乗る唯一の SKU である。**
+   ;;
+   ;; `clj/src/dougaka/graphs/render.cljc` は純関数で、モデルを 1 つも呼ばず、
+   ;; encode もせず、即時に返す（自分の note が `mp4 encode/upload is
+   ;; intentionally not run in-process` と書いている）。完成尺が job 形で
+   ;; v1 に乗らないのに対し、これは 1 request で答えが出る。
+   ;;
+   ;; ライセンスの外側にある: 返るのは ffmpeg のコマンド列と segment 構造で、
+   ;; 生成モデルの出力ではない。licence.edn の OpenRAIL++ 流れ込みは
+   ;; **この SKU には掛からない** —— 掛かるのは生成物を含む完成尺の方。
+   :plan/licence-note "returns commands, not generated frames — licence.edn's
+                       OpenRAIL++ flow-down does not reach this SKU"
+   ;; 費用の基礎: **計量された credits は 0**。台帳に render の spend は 1 件も
+   ;; 無い（モデルを呼ばないので当然）。CPU は消費するが計量されていないので、
+   ;; 真の原価は「0 ではなく未計量」であり、下限が 0 であることだけが言える。
+   ;; したがって break-even は導けず、**この価格は原価から出ていない**。
+   :plan/cost-basis :no-metered-cost
+   :plan/cost-note "0 metered credits (no model call). The CPU is real and
+                    unmetered, so the cost is bounded below by zero and is
+                    otherwise unmeasured. This price is not derived from it."
+   :plan/hard-cap {:plans 1}}
+
   {:plan/id :per-short
    :plan/name "One finished short, up to 90 seconds"
    :plan/status :proposed
@@ -102,7 +144,13 @@
                  the point: forgetting cannot promote a testnet price."}
   {:gate/id :discovery-document
    :gate/met? false
+   :gate/blocks [:per-second :per-short]
    :gate/detail "MEASURED 2026-09-01, and it is not one document away.
+
+                 UPDATE, same day: the :render-plan SKU below is the one that
+                 fits v1, so the shape question is answered — what remains for
+                 IT is only (1), an origin. (2) still blocks :per-second and
+                 :per-short, which are the job-shaped ones.
 
                  (1) There is no origin. dougaka.gftd.ai and dougaka.aozora.app
                  both answer 000 — no DNS, nothing deployed. The appview's
