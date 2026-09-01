@@ -66,6 +66,12 @@
   {:vendor "Shotstack" :product "subscription" :usd-per-rendered-minute 0.20
    :source "https://shotstack.io/pricing/" :read-on "2026-09-01"
    :comparable :adjacent-render-api}]
+ ;; どこへ払うのか。**base-sepolia 上の**同じ treasury アドレスで、murakumo と
+ ;; kotobase が mainnet で使っているものと同一の鍵に対応する。testnet 建てなので
+ ;; ここに届くのは価値の無い USDC であり、それがこの段階で正しい —— 実演のために
+ ;; 新しい鍵を作ると、mainnet に上げる日に custody が 1 つ増える。
+ :pricing/pay-to "0xA00366234D29d4F882088048c0B2fa0dB7302D4E"
+
  :pricing/cost-basis
  {:measured-on "2026-09-01"
   :source "GET https://api.murakumo.cloud/infer/runs — 124 spend events, account `dougaka`"
