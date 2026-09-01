@@ -108,6 +108,19 @@
    :plan/settles-on "base-sepolia"
    :plan/usd 0.02
    :plan/request-shaped? true
+   ;; **origin が実際に serve しているか。** discovery document に載るのは
+   ;; `:plan/request-shaped?` かつ `:plan/served?` の plan だけ。
+   ;;
+   ;; false である理由: origin（dougaka.itonami.cloud）は 2026-09-01 に立ったが、
+   ;; plan builder は `douga.ffmpeg/build-render-plan` —— 524 行、reduce/map/
+   ;; filter/str を 49 箇所で使う。Kotoba へ移すのは Q9 の whole-component
+   ;; migration で、単一ファイル guest が stdlib を引けない（`--prelude` は CLJS
+   ;; backend しか読まない）以上、今日は書けない。
+   ;;
+   ;; **serve していないものを広告しない。** murakumo が 2026-07-31 に
+   ;; `/x402/v1/messages` でそれをやった —— 広告し、買い手が払い、検証も通り、
+   ;; そして upstream が無いと答えた。その 1 件が `sells?` を生ませた。
+   :plan/served? false
    :plan/resource "POST https://dougaka.itonami.cloud/xrpc/cloud.itonami.apps.dougaka.render
                    — timeline in, ffmpeg render plan out"
    ;; **これが x402 v1 にそのまま乗る唯一の SKU である。**
