@@ -51,6 +51,8 @@
  :pricing/settles-on "base-sepolia"
  :pricing/updated "2026-09-01"
  :pricing/authority "ADR-2608110200 (price as data) / ADR-2608291009 決定 5 (bot P&L)"
+ :pricing/licence "licence.edn — 上流 7 モデルを実測した上で買い手に渡す条件"
+ :pricing/availability "availability.edn — 稼働条件（約束ではなく実測）"
  :pricing/cost-basis
  {:measured-on "2026-09-01"
   :source "GET https://api.murakumo.cloud/infer/runs — 124 spend events, account `dougaka`"
@@ -105,11 +107,25 @@
                  origin publishes about itself and nothing else."}
   {:gate/id :output-license
    :gate/met? false
-   :gate/detail "nothing states what a buyer may do with a finished short —
-                 broadcast rights, model/voice provenance, and whether the
-                 governor's approval transfers. Selling before that is selling
-                 an unstated licence."}
+   :gate/detail "STATED, NOT REVIEWED (2026-09-01). licence.edn now says what a
+                 buyer receives, derived from all seven upstream models read the
+                 same day: MiniMax's terms let the customer retain ownership of
+                 generated content (which is what makes the 83% of credits spent
+                 on minimax-h3 sellable at all), four open-weight models are
+                 Apache-2.0/MIT, and animagine-xl-4.0's OpenRAIL++ flows
+                 use-restrictions down to the buyer. The gate stays UNMET because
+                 `:licence/status :proposed` — an agent measured the upstream and
+                 wrote the terms; nobody qualified has reviewed them, and a
+                 legal gate is not one an agent may flip."}
   {:gate/id :availability
-   :gate/met? false
-   :gate/detail "no published statement of how often a commissioned short is
-                 delivered, or what happens when the governor holds one."}]}
+   :gate/met? true
+   :gate/met-on "2026-09-01"
+   :gate/detail "availability.edn states the cadence (daily 10:30 tick, and that
+                 the registry cadence is :active? false so the actor is not
+                 currently running of its own accord), what a governor hold does
+                 (no delivery, ledger-only), and that a held commission is not
+                 charged — implemented as charge-AFTER-hold rather than refund,
+                 because x402 is prepaid and settling first would leave a payer
+                 with nothing. It is `:status :measured`, not a promise: the
+                 known gaps (no delivery history, no measured latency) are named
+                 in the same file."}]}

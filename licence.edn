@@ -1,0 +1,109 @@
+;; 買い手が何を受け取るのか —— 上流 7 つを実測した上での提案。
+;;
+;; ## この gate が「何も書かれていない」だった理由
+;;
+;; pricing.edn の `:output-license` gate は「broadcast rights・model/voice の
+;; provenance・governor の承認が移転するか、どれも書かれていない」と言っていた。
+;; 書けなかったのではなく、**書く前に上流を測っていなかった**。1 本の完成尺には
+;; 7 つのモデルの出力が入っていて、そのどれか 1 つが商用再配布を許していなければ
+;; 値段の話は成立しない。
+;;
+;; ## 実測（2026-09-01）
+;;
+;; 開放重みの 5 つは HuggingFace の API（`cardData.license`）から、MiniMax の
+;; 2 つは同社 Open Platform 利用規約の本文から読んだ。規約ページは client-render
+;; なので curl では 473 文字しか取れず、埋め込まれた i18n payload から本文を
+;; 取り出している —— **読めた文そのものを下に引用してある**ので、引用元が変わった
+;; ことは差分で分かる。
+;;
+;; 拘束条件は 1 つだけだった: **animagine-xl-4.0 の OpenRAIL++**。商用利用は
+;; 許すが、使用制限（Attachment A）が**下流の利用者まで流れる**。だから買い手に
+;; 渡す licence は、その制限より緩くできない。
+;;
+;; 逆に、MiniMax は生成物の権利を顧客が保持すると明記していた。これが無ければ
+;; 映像部分（credits の 83%）を売る根拠が無かった。
+
+{:licence/version 1
+ :licence/status :proposed          ; 法務レビューは owner のもの。agent は書いた
+ :licence/updated "2026-09-01"
+ :licence/subject "dougaka が納品する完成縦型ショート（720x1280、45〜90 秒）"
+
+ ;; ── 上流の実測 ────────────────────────────────────────────────────────────
+ :licence/upstream
+ [{:model "minimax-h3" :role :video :credits 1936
+   :licence "MiniMax Open Platform 利用規約"
+   :quote "As between you and us, and to the extent permitted by applicable laws, you retain your ownership rights in Client input and generated content."
+   :source "https://platform.minimax.io/protocol/terms-of-service"
+   :read-on "2026-09-01"
+   :note "ページは client-render。埋め込み payload から本文を抽出した"}
+  {:model "minimax-music3" :role :music :credits 5
+   :licence "MiniMax Open Platform 利用規約（同上）"
+   :source "https://platform.minimax.io/protocol/terms-of-service" :read-on "2026-09-01"}
+  {:model "trellis" :role :3d-asset :credits 225
+   :licence "mit" :source "https://huggingface.co/api/models/microsoft/TRELLIS-image-large"
+   :read-on "2026-09-01"}
+  {:model "cosyvoice2" :role :voice :credits 76
+   :licence "apache-2.0" :source "https://huggingface.co/api/models/FunAudioLLM/CosyVoice2-0.5B"
+   :read-on "2026-09-01"}
+  {:model "wan2.2-ti2v-5b" :role :video :credits 40
+   :licence "apache-2.0" :source "https://huggingface.co/api/models/Wan-AI/Wan2.2-TI2V-5B"
+   :read-on "2026-09-01"}
+  {:model "ace-step" :role :music :credits 26
+   :licence "apache-2.0" :source "https://huggingface.co/api/models/ACE-Step/ACE-Step-v1-3.5B"
+   :read-on "2026-09-01"}
+  {:model "animagine-xl-4.0" :role :still :credits 30
+   :licence "openrail++"
+   :source "https://huggingface.co/api/models/cagliostrolab/animagine-xl-4.0"
+   :read-on "2026-09-01"
+   :binding-constraint true
+   :note "CreativeML Open RAIL++-M。商用利用は可だが Attachment A の使用制限が
+          下流へ流れる。ここが 7 つの中で唯一、買い手に渡す条件を縛る"}]
+
+ ;; ── 買い手が受け取るもの ──────────────────────────────────────────────────
+ :licence/grant
+ {:grant/scope "納品された完成尺そのものの、期限無し・地域無制限・非独占の利用権"
+  :grant/includes [:broadcast :streaming :social-distribution :advertising :modification]
+  :grant/sublicensable? true
+  :grant/exclusive? false
+  ;; 独占ではない理由: 同じ素材から作られた別の尺を他へ売れなくする約束を、
+  ;; provenance を追える仕組みが無いまま結ぶことはできない。
+  :grant/attribution-required? false}
+
+ ;; ── 流れてくる制限（緩められない） ────────────────────────────────────────
+ :licence/flowed-down
+ [{:from "animagine-xl-4.0 / CreativeML Open RAIL++-M"
+   :restriction "Attachment A の使用制限（違法目的・差別・他者への損害など）を、
+                 買い手およびその再許諾先まで同じ条件で引き継ぐ"
+   :why "OpenRAIL++ は再配布者に同じ制限の添付を義務づける。買い手に渡す条件を
+         それより緩くすると、我々が守れない約束をしたことになる"
+   :applies-to :all-outputs
+   :follow-up "本来は animagine の静止画を含む尺だけに掛かる制限だが、
+               1 本ごとの provenance を台帳が持っていないので全出力に掛ける。
+               per-output provenance を持てば緩められる —— 持つまでは緩めない"}]
+
+ ;; ── 買い手に必ず伝えること ────────────────────────────────────────────────
+ :licence/disclosures
+ [{:id :synthetic-origin
+   :severity :must-read
+   :text "映像・音声・音楽・静止画は生成モデルの出力である。実在の人物の肖像や
+          実際の出来事の記録ではない。報道・証拠・記録の用途に使えない。"}
+  {:id :voice-provenance
+   :severity :must-read
+   :text "音声は CosyVoice2 の合成音声であり、特定の話者の声を模したものではない。
+          実在の話者を模する用途は本 licence の範囲外。"}
+  {:id :governor-hold
+   :severity :should-read
+   :text "DougakaGovernor が可決しなかった企画は納品されない。保留は品質判断では
+          なく方針判断であり、返金は :availability の条件に従う。"}]
+
+ ;; ── まだ決めていないこと ──────────────────────────────────────────────────
+ :licence/open
+ [{:what :legal-review
+   :detail "この文書は上流を測って書いた提案であって、法務レビューを受けていない。
+            `:licence/status :proposed` はそれを言っている"}
+  {:what :per-output-provenance
+   :detail "どの尺にどのモデルが入ったかを 1 本ごとに記録していない。記録すれば
+            OpenRAIL++ の流れ込みを該当尺だけに限定できる"}
+  {:what :third-party-material
+   :detail "台本や参照画像に第三者の素材が入る経路があるかを確認していない。
+            入るなら、その権利処理はここに書かれていない"}]}

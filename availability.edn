@@ -1,0 +1,45 @@
+;; いつ納品されるのか、保留されたらどうなるのか —— 測って書いた稼働条件。
+;;
+;; pricing.edn の `:availability` gate は「commissioned short がどれくらいの
+;; 頻度で納品されるか、governor が保留したら何が起きるか、どちらも published な
+;; statement が無い」と言っていた。約束を発明せずに閉じる方法は 1 つで、
+;; **実際にそうなっている条件を書く**こと。下は全部、この repo の設定と台帳から
+;; 読める事実であって、SLA の目標値ではない。
+
+{:availability/version 1
+ :availability/status :measured        ; 目標ではなく現状。約束したら :committed
+ :availability/updated "2026-09-01"
+
+ :availability/cadence
+ {:tick "1 日 1 回 10:30（deploy/com.dougaka.outer-loop.plist.tmpl の
+         StartCalendarInterval）。1 run = 1 tick で、消化済みの日は :idle で抜ける"
+  :active? false
+  :active-note "registry の cadence は `:active? false` 起点
+                （aozora.appview.creator-actors）。**現在この actor は自発的には
+                回っていない。** 有効化は registry の 1 行だが、まだ引かれていない"
+  :implication "したがって『毎日 1 本』は capability であって実績ではない。
+                実績としてこれまでに焼かれたのは 246 完成秒（2026-09-01 実測）"}
+
+ :availability/governor
+ {:holds? true
+  :what-happens "DougakaGovernor が :hold にした企画は commit されず、台帳には
+                 hold として残る（ledger only）。納品物は発生しない"
+  :is-it-quality? false
+  :note "保留は方針判断であって品質判断ではない。買い手から見ると『作れなかった』
+         ではなく『出さないと決めた』"}
+
+ :availability/on-hold-refund
+ {:policy :proposed
+  :text "保留で納品が発生しなかった場合、その依頼分は課金しない。x402 は前払い
+         なので、実装は返金ではなく **課金前に保留を確定させる** 順序になる ——
+         決済してから保留すると、払った買い手に何も渡らない"
+  :implemented? false
+  :why "現在この経路は testnet 建てで、決済がまだ 1 度も起きていない。
+        順序の実装は最初の決済より前で足りる"}
+
+ :availability/known-gaps
+ [{:what :no-delivery-history
+   :detail "commissioned な納品は 0 件。上の cadence は設定であって実績ではない"}
+  {:what :no-latency-measurement
+   :detail "依頼から納品までの所要時間を測っていない。tick が日次なので下限は
+            1 日だが、生成と governor を含めた実測値は無い"}]}
