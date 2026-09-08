@@ -24,7 +24,7 @@
 ;; 2026-08-22: `.bb` から移植（ADR-2607173000 — script host は nbb のみ）。
 (ns produce-video
   (:require [clojure.edn :as edn]
-            [clojure.string :as str]
+            [kotoba.lang.text :as str]
             [dougaka.chain :as chain]
             ["child_process" :as cp]
             ["fs" :as fs]
