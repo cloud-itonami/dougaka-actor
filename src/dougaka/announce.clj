@@ -12,14 +12,13 @@
   deploy/identify-live.
 
   Usage: clojure -M:dev -m dougaka.announce <video.mp4> [episode-id] [title]"
-  (:require [clojure.data.json :as json]
+  (:require [kotoba.net.jvm-host :as jvm-host]
+            [clojure.data.json :as json]
             [clojure.java.io :as io]
             [dougaka.aozora :as aozora]
             [dougaka.cacao :as cacao]
             [dougaka.publisher :as publisher])
-  (:import [java.net URI]
-           [java.net.http HttpClient HttpRequest HttpRequest$BodyPublishers
-            HttpResponse$BodyHandlers])
+  
   (:gen-class))
 
 (def default-pds aozora/default-pds)
@@ -33,12 +32,13 @@
                           out (java.io.ByteArrayOutputStream.)]
                 (io/copy in out)
                 (.toByteArray out))
-        req (-> (HttpRequest/newBuilder (URI/create (str pds "/xrpc/com.atproto.repo.uploadBlob")))
-                (.header "Content-Type" mime)
-                (cond-> jwt (.header "Authorization" (str "Bearer " jwt)))
-                (.method "POST" (HttpRequest$BodyPublishers/ofByteArray bytes))
-                (.build))
-        resp (.send (HttpClient/newHttpClient) req (HttpResponse$BodyHandlers/ofString))]
+                ;; delegated to kotoba.net.jvm-host (:body-bytes for the raw mp4 upload)
+        resp ((jvm-host/http-transport {:timeout-seconds 300})
+              {:url (str pds "/xrpc/com.atproto.repo.uploadBlob")
+               :method :post
+               :headers (cond-> {"Content-Type" mime}
+                          jwt (assoc "Authorization" (str "Bearer " jwt)))
+               :body-bytes bytes})
     (when-not (= 200 (.statusCode resp))
       (throw (ex-info "uploadBlob failed" {:status (.statusCode resp) :body (.body resp)})))
     (json/read-str (.body resp) :key-fn keyword)))
