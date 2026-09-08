@@ -15,7 +15,7 @@
   gate (dougaka.operation) — phase 2 public requires a :publish or
   :auto-publish grant (superproject ADR-2607162200 Layer D)."
   (:require [kotoba.net.jvm-host :as jvm-host]
-            [clojure.string :as str]
+            [kotoba.lang.text :as str]
             [dougaka.cacao :as cacao]
             [dougaka.publisher :as publisher])
     (:import [java.time Instant]

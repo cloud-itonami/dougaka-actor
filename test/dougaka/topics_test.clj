@@ -8,7 +8,7 @@
   be one of the pre-backlog hand-authored designs (the ten from 2026-07)."
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [clojure.string :as str]
+            [kotoba.lang.text :as str]
             [clojure.test :refer [deftest is testing]]))
 
 (def statuses #{:open :designed :rendered :published})

@@ -20,7 +20,7 @@
     :rate-limited         published-today ≥ daily cap (context)
   SOFT (commit with tag):
     :low-confidence       overall confidence < floor"
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [dougaka.advisor :as advisor]))
 
 (def confidence-floor 0.4)

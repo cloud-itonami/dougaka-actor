@@ -3,7 +3,7 @@
   one more answer, then the governor. Pinned both ways — a first answer that
   parses never triggers a second call, and a second failure is a noop with
   the reason kept."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [clojure.test :refer [deftest is testing]]
             [dougaka.advisor :as advisor]
             [langchain.model :as model]))

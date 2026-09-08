@@ -24,7 +24,7 @@
             [clojure.data.json :as json]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [clojure.string :as str]
+            [kotoba.lang.text :as str]
             [langchain.edn-persist :as edn-persist]
             [langchain.model :as model]
             [langgraph.graph :as g]

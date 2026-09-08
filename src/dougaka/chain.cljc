@@ -8,7 +8,7 @@
   Portable .cljc on purpose: the script loads it under nbb, the tests under
   the JVM, and both see the same functions."
   (:require #?(:clj [clojure.edn] :cljs [cljs.reader])
-            [clojure.string :as str]))
+            [kotoba.lang.text :as str]))
 
 (defn opt
   "Value following `flag` in `args`, or nil."

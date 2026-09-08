@@ -35,7 +35,7 @@
                               (produce-video.cljs 既定は west sibling)"
   (:require [clojure.data.json :as json]
             [clojure.java.io :as io]
-            [clojure.string :as str]
+            [kotoba.lang.text :as str]
             [dougaka.aozora :as aozora]
             [dougaka.cacao :as cacao]
             [dougaka.phase :as phase]
