@@ -10,7 +10,7 @@
   された :video/scenes を元の入れ子データへ戻す。"
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [clojure.string :as str]
+            [kotoba.lang.text :as str]
             [clojure.test :refer [deftest is testing]]
             [dougaka.advisor :as advisor]
             [dougaka.governor :as governor]
