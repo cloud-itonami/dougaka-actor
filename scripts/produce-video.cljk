@@ -1,4 +1,4 @@
-#!/usr/bin/env nbb
+#!/usr/bin/env kbb
 ;; produce-video — theme 一発で縦型ショート動画を製造する orchestrator
 ;; (minidrama scripts/produce-episode 同型、keep in sync)。
 ;;
@@ -9,9 +9,9 @@
 ;;   dougaka.announce   uploadBlob(認証) → app.aozora.embed.video post → /videos
 ;;
 ;; usage:
-;;   nbb --classpath src scripts/produce-video.cljk --theme "商店街の朝" [--id v-x]
+;;   kbb --backend sci --classpath src scripts/produce-video.cljk --theme "商店街の朝" [--id v-x]
 ;;      [--duration 60] [--aspect portrait|landscape] [--no-burn] [--announce] [--title "…"]
-;;   nbb --classpath src scripts/produce-video.cljk --plan videos/<slug>.edn [--announce]
+;;   kbb --backend sci --classpath src scripts/produce-video.cljk --plan videos/<slug>.edn [--announce]
 ;;
 ;; --announce が「この動画を公開してよい」という sign-off (per-video human、
 ;; または outer loop の :auto-publish standing grant — superproject
@@ -59,7 +59,7 @@
         {:keys [usage id title announce? aspect no-burn?] :as a}
         (chain/parse-args args {:now-ms (.now js/Date) :design design})
         _ (when usage
-            (eprintln "usage: nbb --classpath src scripts/produce-video.cljk (--theme \"…\" | --plan videos/x.edn) [--id …] [--duration 60] [--aspect portrait|landscape] [--no-burn] [--announce] [--title …]")
+            (eprintln "usage: kbb --backend sci --classpath src scripts/produce-video.cljk (--theme \"…\" | --plan videos/x.edn) [--id …] [--duration 60] [--aspect portrait|landscape] [--no-burn] [--announce] [--title …]")
             (js/process.exit 1))
         here (repo-root)
         engine (or (chain/engine-dir {:override (.-DOUGAKA_ENGINE_DIR (.-env js/process))

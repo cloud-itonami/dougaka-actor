@@ -105,7 +105,7 @@ superproject ADR-2608221500（MoneyPrinterTurbo 相当の制作ラインを bots
   `videos/` は設計だけを置く（outer-loop と test が `videos/*.edn` を全部設計として読む）。
 - **`scripts/produce-video.bb` → `scripts/produce-video.cljk`**（ADR-2607173000、script host は
   nbb のみ）。engine の既定は west sibling `../ai-gftd-dougaka/clj`（cloud-itonami org）、
-  旧 `../../gftdcojp/...` も探す。engine は `clojure -M`（`-M:dev` は workspace 外で douga を
+  旧 `../../gftdcojp/...` も探す。engine は `kbb -M`（`-M:dev` は workspace 外で douga を
   解決できない）。
 - **LLM は `murakumo-main` alias 解決**（`dougaka.deploy/resolve-chat-endpoint`: env →
   alias → endpoint-only fallback）。deprecated な gemma-4-E4B の焼き込みを撤去。

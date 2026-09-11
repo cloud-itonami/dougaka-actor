@@ -40,7 +40,7 @@ low-confidence は block せず `:low-confidence` タグで commit（透明性�
   outer-loop / deploy）のみ。
 - actor 自身の Ed25519 identity は `.dougaka/identity.edn`（gitignored）—
   NEVER commit a private key。製造した mp4 も `.dougaka/videos/`（gitignored）。
-- `clojure -M:lint`（clj-kondo, errors fail）/ `clojure -M:dev:test`。
+- `kbb -M:lint`（clj-kondo, errors fail）/ `kbb -M:dev:test`。
 - videos/ カタログ設計は Datomic/Datascript tx-data（wrap-map ns=video、
   :video/scenes は pr-str blob）— `video-designs-test` が governor +
   フォーマット不変条件（60s ちょうど / shot ≤10s / live-action / 9:16 /

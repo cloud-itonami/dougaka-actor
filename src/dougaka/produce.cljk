@@ -9,8 +9,8 @@
   Governor doctrine is unchanged: a HOLD prints the violation basis and exits
   1 — no plan file is written for a rejected video.
 
-  Usage: clojure -M:dev -m dougaka.produce <theme> [episode-id] [duration]
-         clojure -M:dev -m dougaka.produce --from videos/<slug>.edn
+  Usage: kbb -M:dev -m dougaka.produce <theme> [episode-id] [duration]
+         kbb -M:dev -m dougaka.produce --from videos/<slug>.edn
            (hand-authored design — STILL censored by the DougakaGovernor via a
             design-advisor: 手書き設計も同じ検閲を通る。videos/*.edn は
             Datomic/Datascript tx-data として保存されている (wrap-map,
@@ -81,7 +81,7 @@
 (defn -main [& [theme episode-id duration]]
   (when-not (and theme (seq theme))
     (binding [*out* *err*]
-      (println "usage: clojure -M:dev -m dougaka.produce <theme>|--from <edn> [episode-id] [duration]"))
+      (println "usage: kbb -M:dev -m dougaka.produce <theme>|--from <edn> [episode-id] [duration]"))
     (System/exit 1))
   (let [design (when (= "--from" theme)
                  (read-design episode-id))

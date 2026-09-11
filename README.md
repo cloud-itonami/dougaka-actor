@@ -80,8 +80,8 @@ announce。engine は mp4 / SRT と一緒に `legs.edn` を書き、loop-ka-prod
 `record --legs` がそれを採点する）。cadence が inactive の間は getTicks が空 = `:idle` が正常。
 
 ```bash
-clojure -M:dev -m dougaka.outer-loop          # run once (launchd: deploy/*.plist.tmpl)
-clojure -M:dev -m dougaka.outer-loop status   # ticks + consumption
+kbb -M:dev -m dougaka.outer-loop          # run once (launchd: deploy/*.plist.tmpl)
+kbb -M:dev -m dougaka.outer-loop status   # ticks + consumption
 ```
 
 ## Injected seams (each a swap, core unchanged)
@@ -97,22 +97,22 @@ clojure -M:dev -m dougaka.outer-loop status   # ticks + consumption
 ## Run
 
 ```bash
-clojure -M:lint       # clj-kondo (errors fail)
-clojure -M:dev:test   # cognitect test-runner
-clojure -M:dev:run    # offline demo (mock advisor/publisher, MemStore)
+kbb -M:lint       # clj-kondo (errors fail)
+kbb -M:dev:test   # cognitect test-runner
+kbb -M:dev:run    # offline demo (mock advisor/publisher, MemStore)
 
 # theme 一発でショート動画を製造 (actor→dougaka engine→announce):
-nbb --classpath src scripts/produce-video.cljk --theme "商店街の朝" --duration 60   # preview (mp4 まで)
-nbb --classpath src scripts/produce-video.cljk --theme "…" --announce               # 公開 = sign-off
-DOUGAKA_USE_LLM=1 nbb --classpath src scripts/produce-video.cljk --theme "…"         # 企画を fleet LLM に書かせる（resources/llm.edn）
-nbb --classpath src scripts/produce-video.cljk --theme "…" --aspect landscape        # 16:9（既定は 9:16）。--no-burn で字幕を焼かない
+kbb --backend sci --classpath src scripts/produce-video.cljk --theme "商店街の朝" --duration 60   # preview (mp4 まで)
+kbb --backend sci --classpath src scripts/produce-video.cljk --theme "…" --announce               # 公開 = sign-off
+DOUGAKA_USE_LLM=1 kbb --backend sci --classpath src scripts/produce-video.cljk --theme "…"         # 企画を fleet LLM に書かせる（resources/llm.edn）
+kbb --backend sci --classpath src scripts/produce-video.cljk --theme "…" --aspect landscape        # 16:9（既定は 9:16）。--no-burn で字幕を焼かない
 
 # videos/ のカタログ設計から製造 (手書き設計も同じ DougakaGovernor を通る):
-nbb --classpath src scripts/produce-video.cljk --plan videos/shotengai-asa.edn [--announce]
+kbb --backend sci --classpath src scripts/produce-video.cljk --plan videos/shotengai-asa.edn [--announce]
 
 # identity (keyed actor):
-clojure -M:dev -m dougaka.deploy create-account    # createAccount (self-CACAO)
-clojure -M:dev -m dougaka.deploy register-handle   # dougaka.aozora.app keyed flip
+kbb -M:dev -m dougaka.deploy create-account    # createAccount (self-CACAO)
+kbb -M:dev -m dougaka.deploy register-handle   # dougaka.aozora.app keyed flip
 ```
 
 ## videos/ — 縦型ショート動画 設計カタログ (実写前提)

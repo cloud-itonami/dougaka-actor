@@ -14,7 +14,7 @@ Three things you can drive independently:
 ## 1. Tests
 
 ```bash
-clojure -M:dev:test
+kbb -M:dev:test
 ```
 
 ```
@@ -29,7 +29,7 @@ not green, stop.
 ## 2. Plan one theme with the deterministic advisor
 
 ```bash
-clojure -M:dev -m dougaka.produce "商店街の朝" qs-1 60
+kbb -M:dev -m dougaka.produce "商店街の朝" qs-1 60
 ```
 
 ```
@@ -45,7 +45,7 @@ is the engine's work order.
 ## 3. Plan one theme with the fleet LLM
 
 ```bash
-DOUGAKA_USE_LLM=1 clojure -M:dev -m dougaka.produce "駅の伝言板に残る、誰も消さないチョークの跡" qs-2 60
+DOUGAKA_USE_LLM=1 kbb -M:dev -m dougaka.produce "駅の伝言板に残る、誰も消さないチョークの跡" qs-2 60
 ```
 
 ```
@@ -66,7 +66,7 @@ blaming the prompt.
 ## 4. The whole chain — a real mp4 with burned-in subtitles
 
 ```bash
-nbb --classpath src scripts/produce-video.cljk --plan videos/shotengai-asa.edn --aspect landscape
+kbb --backend sci --classpath src scripts/produce-video.cljk --plan videos/shotengai-asa.edn --aspect landscape
 ```
 
 ```

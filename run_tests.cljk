@@ -1,7 +1,7 @@
 (ns dougaka.run-tests
   "Test runner for dougaka-actor (new actors ship run_tests.cljk, not
-  .sh — per etzhayyim/root CLAUDE.md). Canonical path: `clojure -M:dev:test`
-  (cognitect test-runner). This runner: `clojure -M -m dougaka.run-tests`."
+  .sh — per etzhayyim/root CLAUDE.md). Canonical path: `kbb -M:dev:test`
+  (cognitect test-runner). This runner: `kbb -M -m dougaka.run-tests`."
   (:require [clojure.test :refer [run-tests]]
             [dougaka.governor-contract-test]
             [dougaka.store-contract-test]

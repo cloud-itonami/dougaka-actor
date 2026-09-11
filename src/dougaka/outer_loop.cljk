@@ -27,8 +27,8 @@
   (hand-authored designs still pass the DougakaGovernor via the
   design-advisor). DOUGAKA_USE_LLM=1 is the deploy-wired LLM path instead.
 
-  Usage: clojure -M:dev -m dougaka.outer-loop            run once
-         clojure -M:dev -m dougaka.outer-loop status     ticks + consumption
+  Usage: kbb -M:dev -m dougaka.outer-loop            run once
+         kbb -M:dev -m dougaka.outer-loop status     ticks + consumption
   Env:   DOUGAKA_PHASE        0 draft / 1 unlisted / 2 public (default 2 —
                               ADR-2607162200 scheduled operation)
          DOUGAKA_ENGINE_DIR   ai-gftd-dougaka/clj engine checkout
@@ -165,7 +165,7 @@
   "produce → engine → announce via the existing orchestrator. Returns exit code.
   DOUGAKA_PUBLISHED_TODAY feeds the governor's deterministic rate cap."
   [design-slug announce? published-today]
-  (let [cmd (cond-> ["nbb" "--classpath" "src" "scripts/produce-video.cljk"
+  (let [cmd (cond-> ["kbb" "--backend" "sci" "--classpath" "src" "scripts/produce-video.cljk"
                      "--plan" (str "videos/" design-slug ".edn")]
               announce? (conj "--announce"))
         pb (doto (ProcessBuilder. ^java.util.List cmd) (.inheritIO))]

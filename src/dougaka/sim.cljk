@@ -1,7 +1,7 @@
 (ns dougaka.sim
   "Offline demo: drive two sample video themes (one clean, one over-budget)
   through the dougaka actor on a MemStore + mock advisor + mock publisher
-  (no network). `clojure -M:dev:run`."
+  (no network). `kbb -M:dev:run`."
   (:require [langgraph.graph :as g]
             [dougaka.operation :as op]
             [dougaka.store :as store]
