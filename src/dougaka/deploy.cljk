@@ -10,10 +10,10 @@
   `dougaka.aozora`. This entrypoint proves the real-LLM → governor →
   (mock) announce path against the live Murakumo model.
 
-  Usage: clojure -M:dev -m dougaka.deploy \"<theme>\" [duration-seconds]
-         clojure -M:dev -m dougaka.deploy identify-live
-         clojure -M:dev -m dougaka.deploy register-handle
-         clojure -M:dev -m dougaka.deploy create-account
+  Usage: kbb -M:dev -m dougaka.deploy \"<theme>\" [duration-seconds]
+         kbb -M:dev -m dougaka.deploy identify-live
+         kbb -M:dev -m dougaka.deploy register-handle
+         kbb -M:dev -m dougaka.deploy create-account
   Env:   DOUGAKA_LLM_URL     chat-completions endpoint override (①)
          DOUGAKA_LLM_MODEL   model id override (①; default follows the alias)
          DOUGAKA_OLLAMA_URL  legacy: an Ollama base URL (/v1/chat/completions
@@ -181,7 +181,7 @@
   "Live identify test: generate the actor's self-sovereign did:key, then
   createSession(self-CACAO)→JWT→createRecord a profile record to
   pds.aozora.app. Proves the app-aozora-pds auth flow for dougaka.
-  clojure -M:dev -m dougaka.deploy identify-live"
+  kbb -M:dev -m dougaka.deploy identify-live"
   []
   (let [id  (cacao/load-or-create-identity! ".dougaka/identity.edn")
         pub (aozora/aozora-publisher {:pds        "https://pds.aozora.app"
@@ -206,7 +206,7 @@
   own did:key on the PDS via com.atproto.identity.updateHandle. After this,
   resolveHandle returns the did:key (not the did:web fallback) and the appview
   attributes the actor's real records to the friendly handle.
-  clojure -M:dev -m dougaka.deploy register-handle"
+  kbb -M:dev -m dougaka.deploy register-handle"
   []
   (let [id (cacao/load-or-create-identity! ".dougaka/identity.edn")]
     (println "actor did:key :" (:did id))
@@ -225,7 +225,7 @@
   "createAccount 昇格 (ADR-2607071700 follow-up): persist the actor's
   `:atproto.account/*` datom on the PDS with a fresh self-CACAO proof, so
   getAccount answers for dougaka.aozora.app (account-store 整合).
-  clojure -M:dev -m dougaka.deploy create-account"
+  kbb -M:dev -m dougaka.deploy create-account"
   []
   (let [id (cacao/load-or-create-identity! ".dougaka/identity.edn")]
     (println "actor did:key :" (:did id))

@@ -25,7 +25,7 @@
          {:local/root "../../kotoba-lang/langchain"}
          io.github.kotoba-lang/langgraph
          {:local/root "../../kotoba-lang/langgraph"}}}
-  ;; clojure -M:dev:run → drive one video theme through the actor
+  ;; kbb -M:dev:run → drive one video theme through the actor
   :run {:main-opts ["-m" "dougaka.sim"]}
   :test {:extra-paths ["test"]
          :extra-deps {io.github.cognitect-labs/test-runner

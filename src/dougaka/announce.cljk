@@ -11,7 +11,7 @@
   the operator verification entrypoint (owner-driven), mirroring
   deploy/identify-live.
 
-  Usage: clojure -M:dev -m dougaka.announce <video.mp4> [episode-id] [title]"
+  Usage: kbb -M:dev -m dougaka.announce <video.mp4> [episode-id] [title]"
   (:require [kotoba.net.jvm-host :as jvm-host]
             [clojure.data.json :as json]
             [clojure.java.io :as io]
@@ -82,7 +82,7 @@
 
 (defn -main [& [path episode-id title]]
   (when-not (and path (.exists (io/file path)))
-    (binding [*out* *err*] (println "usage: clojure -M:dev -m dougaka.announce <video.mp4> [episode-id] [title]"))
+    (binding [*out* *err*] (println "usage: kbb -M:dev -m dougaka.announce <video.mp4> [episode-id] [title]"))
     (System/exit 1))
   (let [id (cacao/load-or-create-identity! ".dougaka/identity.edn")
         episode-id (or episode-id "demo-1")

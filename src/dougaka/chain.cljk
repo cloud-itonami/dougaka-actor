@@ -57,22 +57,22 @@
   "argv for step 1 (the actor: VideoLLM ⊣ DougakaGovernor)."
   [{:keys [plan-src theme id duration]}]
   (if plan-src
-    ["clojure" "-M:dev" "-m" "dougaka.produce" "--from" plan-src]
-    (cond-> ["clojure" "-M:dev" "-m" "dougaka.produce" theme id]
+    ["kbb" "-M:dev" "-m" "dougaka.produce" "--from" plan-src]
+    (cond-> ["kbb" "-M:dev" "-m" "dougaka.produce" theme id]
       duration (conj duration))))
 
 (defn engine-step
   "argv for step 2 (the engine: keyframes → ffmpeg → mp4 + SRT + legs.edn).
   Plain -M: the engine's git deps are pinned, -M:dev needs a west sibling."
   [{:keys [plan-file out-dir aspect no-burn?]}]
-  (cond-> ["clojure" "-M" "-m" "dougaka.pipeline" plan-file out-dir]
+  (cond-> ["kbb" "-M" "-m" "dougaka.pipeline" plan-file out-dir]
     aspect (conj "--aspect" aspect)
     no-burn? (conj "--no-burn")))
 
 (defn announce-step
   "argv for step 3 (uploadBlob → app.aozora.embed.video → /videos)."
   [{:keys [mp4 id title]}]
-  ["clojure" "-M:dev" "-m" "dougaka.announce" mp4 id title])
+  ["kbb" "-M:dev" "-m" "dougaka.announce" mp4 id title])
 
 (defn unblob [v]
   (if (string? v)
