@@ -11,7 +11,7 @@ Bot の 1 tick は repository read が 2 回までなので、必要なものは
 連鎖は: `topics/backlog.edn` → 企画 Bot が `videos/<slug>.edn` を書く（held write、承認で
 着地）→ 検品 Bot が bounds を反証 → 夜間 loop（`kotoba-lang/loop-ka-production` の
 `:dougaka` channel）が `dougaka.outer-loop` で次の未消費設計を採り、
-`scripts/produce-video.cljs` → DougakaGovernor → engine（`cloud-itonami/ai-gftd-dougaka`）
+`scripts/produce-video.cljk` → DougakaGovernor → engine（`cloud-itonami/ai-gftd-dougaka`）
 → mp4 + SRT + `legs.edn` → `record --legs` で採点 → `:clean` だけ announce。
 
 ## 設計ファイルの形（`videos/<slug>.edn`）
@@ -38,7 +38,7 @@ Bot の 1 tick は repository read が 2 回までなので、必要なものは
 | `:video/duration-target` | `60` 固定（shot の合計と一致させる） |
 | `:video/scenes` | `[{:seq :setting :shots [{:seq :duration :speaker :prompt :subtitle}]}]` を **pr-str した 1 本の文字列** |
 
-## 守る bounds（DougakaGovernor と `test/dougaka/video_designs_test.clj` が機械検査する）
+## 守る bounds（DougakaGovernor と `test/dougaka/video_designs_test.cljk` が機械検査する）
 
 | 検査 | 値 | 超えると |
 |---|---|---|
