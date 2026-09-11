@@ -75,7 +75,7 @@ aozora PDS cron が `creatortick/dougaka/<date>/<slot>` を発行（registry
 cadence が `:active? true` の間）→ `dougaka.outer-loop` が 1 run = 1 tick で
 消費。消費 record は自 repo の `com.etzhayyim.apps.dougaka.tick`（rkey
 `<date>-<slot>`、lease 兼用・冪等）。episode は videos/ カタログの未消費
-design を順に採り、chain は `scripts/produce-video.cljs`（nbb。produce → engine →
+design を順に採り、chain は `scripts/produce-video.cljk`（nbb。produce → engine →
 announce。engine は mp4 / SRT と一緒に `legs.edn` を書き、loop-ka-production の
 `record --legs` がそれを採点する）。cadence が inactive の間は getTicks が空 = `:idle` が正常。
 
@@ -102,13 +102,13 @@ clojure -M:dev:test   # cognitect test-runner
 clojure -M:dev:run    # offline demo (mock advisor/publisher, MemStore)
 
 # theme 一発でショート動画を製造 (actor→dougaka engine→announce):
-nbb --classpath src scripts/produce-video.cljs --theme "商店街の朝" --duration 60   # preview (mp4 まで)
-nbb --classpath src scripts/produce-video.cljs --theme "…" --announce               # 公開 = sign-off
-DOUGAKA_USE_LLM=1 nbb --classpath src scripts/produce-video.cljs --theme "…"         # 企画を fleet LLM に書かせる（resources/llm.edn）
-nbb --classpath src scripts/produce-video.cljs --theme "…" --aspect landscape        # 16:9（既定は 9:16）。--no-burn で字幕を焼かない
+nbb --classpath src scripts/produce-video.cljk --theme "商店街の朝" --duration 60   # preview (mp4 まで)
+nbb --classpath src scripts/produce-video.cljk --theme "…" --announce               # 公開 = sign-off
+DOUGAKA_USE_LLM=1 nbb --classpath src scripts/produce-video.cljk --theme "…"         # 企画を fleet LLM に書かせる（resources/llm.edn）
+nbb --classpath src scripts/produce-video.cljk --theme "…" --aspect landscape        # 16:9（既定は 9:16）。--no-burn で字幕を焼かない
 
 # videos/ のカタログ設計から製造 (手書き設計も同じ DougakaGovernor を通る):
-nbb --classpath src scripts/produce-video.cljs --plan videos/shotengai-asa.edn [--announce]
+nbb --classpath src scripts/produce-video.cljk --plan videos/shotengai-asa.edn [--announce]
 
 # identity (keyed actor):
 clojure -M:dev -m dougaka.deploy create-account    # createAccount (self-CACAO)
@@ -135,14 +135,14 @@ DougakaGovernor + フォーマット不変条件を全数検証される — **g
 
 ## Related files
 
-- `src/dougaka/operation.cljc` — StateGraph
-- `src/dougaka/governor.cljc` — DougakaGovernor
-- `src/dougaka/advisor.cljc` — VideoLLM (mock ‖ Murakumo LLM)
-- `src/dougaka/store.cljc` — Store (MemStore ‖ DatomicStore)
-- `src/dougaka/publisher.cljc` — Publisher (Mock ‖ dougaka.aozora)
-- `src/dougaka/phase.cljc` — phase 0 draft / 1 unlisted / 2 public+grant
-- `src/dougaka/outer_loop.clj` — tick 消費 outer loop (Layer B)
-- `scripts/produce-video.cljs` — produce → engine → announce orchestrator（nbb。判断は `src/dougaka/chain.cljc`、JVM テストで固定）
+- `src/dougaka/operation.cljk` — StateGraph
+- `src/dougaka/governor.cljk` — DougakaGovernor
+- `src/dougaka/advisor.cljk` — VideoLLM (mock ‖ Murakumo LLM)
+- `src/dougaka/store.cljk` — Store (MemStore ‖ DatomicStore)
+- `src/dougaka/publisher.cljk` — Publisher (Mock ‖ dougaka.aozora)
+- `src/dougaka/phase.cljk` — phase 0 draft / 1 unlisted / 2 public+grant
+- `src/dougaka/outer_loop.cljk` — tick 消費 outer loop (Layer B)
+- `scripts/produce-video.cljk` — produce → engine → announce orchestrator（nbb。判断は `src/dougaka/chain.cljk`、JVM テストで固定）
 - `docs/operator-quickstart.md` — 歩いた手順（実行した出力だけ）
 - `resources/llm.edn` — 企画 LLM の明示選択（2026-08-22: `qwen3.8-27b-fastmtp-aggressive` @ api.murakumo.cloud、
   thinking off、max-tokens 4096）。無ければ `murakumo-main` alias。実測はファイル冒頭のコメント

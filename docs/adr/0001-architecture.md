@@ -52,7 +52,7 @@ containment + independent governor + append-only ledger
    （`cloud-itonami/ai-gftd-dougaka/clj` の `dougaka.pipeline`（2026-08 に cloud-itonami org へ）: plan EDN +
    出力 dir → keyframes → ffmpeg → 縦 mp4 + SRT）への発注書。actor 側に
    生成実装を持たない（新規エンジンを書かない — 既存エンジンの消費のみ）。
-   chain は `scripts/produce-video.cljs`（nbb、2026-08-22 に .bb から移植。produce → engine → announce、
+   chain は `scripts/produce-video.cljk`（nbb、2026-08-22 に .bb から移植。produce → engine → announce、
    エンジン checkout は west sibling 既定 / `DOUGAKA_ENGINE_DIR` 上書き）。
 3. **outer loop = `dougaka.outer-loop`**（1 run = 1 tick 消費、minidrama
    ADR-0002 と同型）: tick は PDS `app.aozora.creator.getTicks?actor=dougaka`
@@ -103,7 +103,7 @@ superproject ADR-2608221500（MoneyPrinterTurbo 相当の制作ラインを bots
   bounds の反証）/ `:work-catalog` の 3 役に分かれ、Cloud Itonami の workforce Bot として
   provision される。Bot が読む 2 ファイルは `topics/backlog.edn` と `topics/README.md`。
   `videos/` は設計だけを置く（outer-loop と test が `videos/*.edn` を全部設計として読む）。
-- **`scripts/produce-video.bb` → `scripts/produce-video.cljs`**（ADR-2607173000、script host は
+- **`scripts/produce-video.bb` → `scripts/produce-video.cljk`**（ADR-2607173000、script host は
   nbb のみ）。engine の既定は west sibling `../ai-gftd-dougaka/clj`（cloud-itonami org）、
   旧 `../../gftdcojp/...` も探す。engine は `clojure -M`（`-M:dev` は workspace 外で douga を
   解決できない）。

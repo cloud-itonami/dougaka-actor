@@ -66,7 +66,7 @@ blaming the prompt.
 ## 4. The whole chain — a real mp4 with burned-in subtitles
 
 ```bash
-nbb --classpath src scripts/produce-video.cljs --plan videos/shotengai-asa.edn --aspect landscape
+nbb --classpath src scripts/produce-video.cljk --plan videos/shotengai-asa.edn --aspect landscape
 ```
 
 ```
