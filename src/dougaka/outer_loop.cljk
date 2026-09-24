@@ -34,7 +34,7 @@
          DOUGAKA_ENGINE_DIR   ai-gftd-dougaka/clj engine checkout
                               (produce-video.cljs 既定は west sibling)"
   (:require [clojure.data.json :as json]
-            [clojure.java.io :as io]
+            [kotoba.io :as io]
             [kotoba.lang.text :as str]
             [dougaka.aozora :as aozora]
             [dougaka.cacao :as cacao]
@@ -104,9 +104,9 @@
 (defn catalog-designs
   "videos/*.edn catalog slugs (sorted) — the scheduled loop drains these."
   []
-  (->> (.listFiles (io/file "videos"))
-       (filter #(str/ends-with? (.getName ^java.io.File %) ".edn"))
-       (map #(str/replace (.getName ^java.io.File %) #"\.edn$" ""))
+  (->> (io/list-files (io/file "videos"))
+       (filter #(str/ends-with? (io/file-name %) ".edn"))
+       (map #(str/replace (io/file-name %) #"\.edn$" ""))
        sort vec))
 
 (defn published-posts
