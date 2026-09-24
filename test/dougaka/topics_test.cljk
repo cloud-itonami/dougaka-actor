@@ -6,7 +6,7 @@
   Two directions, stated: a :designed entry must point at a design file that
   exists, and a design file that exists must be reachable from the backlog OR
   be one of the pre-backlog hand-authored designs (the ten from 2026-07)."
-  (:require [clojure.edn :as edn]
+  (:require [kotoba.lang.edn :as edn]
             [clojure.java.io :as io]
             [kotoba.lang.text :as str]
             [kotoba.test :refer [deftest is testing]]))

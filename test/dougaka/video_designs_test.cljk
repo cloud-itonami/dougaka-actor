@@ -8,7 +8,7 @@
   として保存されている (wrap-map, ns=video)。design map として消費するには
   reconstitute-design で :db/id を落とし :video/ 名前空間を剥がし、blob 化
   された :video/scenes を元の入れ子データへ戻す。"
-  (:require [clojure.edn :as edn]
+  (:require [kotoba.lang.edn :as edn]
             [clojure.java.io :as io]
             [kotoba.lang.text :as str]
             [kotoba.test :refer [deftest is testing]]
