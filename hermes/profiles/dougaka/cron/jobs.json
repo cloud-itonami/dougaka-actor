@@ -29,11 +29,11 @@
       "enabled": true,
       "enabled_toolsets": null,
       "id": "24f810989703",
-      "model": "qwen3.8-27b-whitehacker",
+      "model": "murakumo/free",
       "name": "dougaka-publish",
       "no_agent": false,
       "prompt": "dougaka の日次制作報告。SOUL.md を読み、~/.hermes/profiles/dougaka/workspace/dougaka-ledger.jsonl の最新行を確認する。final_status=done で work_dir に output.mp4 がある場合: その作品を aozora.app に公開する手順（dougaka-vector の publish 経路、~/github/com-junkawasaki/orgs/cloud-itonami/ai-gftd-dougaka-vector/bin/publish.cljs — self-CACAO、identity は kagi dougaka-actor-identity）を確認し、公開または公開ブロック理由を報告する。work が無い/失敗の場合は台帳の error をそのまま報告する。捏造禁止: 測れていないものを測れたと書かない。報告書式: 作品 / job id / 状態 / 投稿URL または ブロック理由 / 次に改善したい点1つ。",
-      "provider": "kotoba",
+      "provider": "murakumo",
       "schedule": {
         "kind": "cron",
         "expr": "0 6 * * *",
