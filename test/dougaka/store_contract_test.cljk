@@ -1,12 +1,10 @@
 (ns dougaka.store-contract-test
   "MemStore ≡ DatomicStore — the same video + ledger facts committed to both
   backends must read back identically (the Store is a swap, not a rewrite)."
-  (:require [clojure.java.io :as io]
+  (:require [kotoba.io :as io]
             [kotoba.test :refer [deftest is testing]]
             [dougaka.store :as store]
-            [langchain.edn-persist :as edn-persist])
-  (:import [java.nio.file Files]
-           [java.nio.file.attribute FileAttribute]))
+            [langchain.edn-persist :as edn-persist]))
 
 (deftest mem-and-datomic-stores-agree
   (doseq [s [(store/seed-db) (store/datomic-store)]]
@@ -26,10 +24,10 @@
     (is (= [0 1 2 3 4] (mapv :i (store/ledger s))))))
 
 (deftest repository-backed-store-restores-after-restart
-  (let [dir (.toFile (Files/createTempDirectory
-                      "dougaka-repository-" (make-array FileAttribute 0)))
+  (let [dir (io/temp-dir
+                      "dougaka-repository-")
         file (io/file dir "state.edn")
-        environment {"KOTOBA_REPOSITORY_STATE_FILE" (.getPath file)}
+        environment {"KOTOBA_REPOSITORY_STATE_FILE" (io/path file)}
         open-store #(store/datomic-store
                      (edn-persist/configured-persist environment
                                                      "actor/dougaka"))

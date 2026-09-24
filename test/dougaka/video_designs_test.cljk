@@ -9,7 +9,7 @@
   reconstitute-design で :db/id を落とし :video/ 名前空間を剥がし、blob 化
   された :video/scenes を元の入れ子データへ戻す。"
   (:require [kotoba.lang.edn :as edn]
-            [clojure.java.io :as io]
+            [kotoba.io :as io]
             [kotoba.lang.text :as str]
             [kotoba.test :refer [deftest is testing]]
             [dougaka.advisor :as advisor]
@@ -27,8 +27,8 @@
         (dissoc (first tx-data) :db/id)))
 
 (defn- designs []
-  (->> (.listFiles (io/file "videos"))
-       (filter #(str/ends-with? (.getName %) ".edn"))
+  (->> (io/list-files (io/file "videos"))
+       (filter #(str/ends-with? (io/file-name %) ".edn"))
        (map #(reconstitute-design (edn/read-string (slurp %))))
        (sort-by :episode-id)))
 
