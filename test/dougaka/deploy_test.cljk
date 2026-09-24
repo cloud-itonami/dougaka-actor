@@ -2,7 +2,7 @@
   "The LLM endpoint is resolved, never baked (ADR-2607173100). Three rungs,
   each pinned by the :source it reports so a log line says which one won."
   (:require [clojure.data.json]
-            [clojure.test :refer [deftest is testing]]
+            [kotoba.test :refer [deftest is testing]]
             [dougaka.advisor :as advisor]
             [dougaka.deploy :as deploy]))
 

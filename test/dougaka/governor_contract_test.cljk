@@ -6,7 +6,7 @@
   committed, never announced), and PUBLIC announcement (phase 2) additionally
   requires an explicit approval grant (:publish or :auto-publish,
   superproject ADR-2607162200 Layer D)."
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [langgraph.graph :as g]
             [dougaka.store :as store]
             [dougaka.advisor :as advisor]

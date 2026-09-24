@@ -3,7 +3,7 @@
   low-confidence plans still commit, tagged :low-confidence (transparency,
   not a block); phase 2 admits the :auto-publish standing grant exactly like
   the per-video human :publish (superproject ADR-2607162200 Layer D)."
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [langgraph.graph :as g]
             [dougaka.store :as store]
             [dougaka.advisor :as advisor]
