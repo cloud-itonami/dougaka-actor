@@ -1,6 +1,6 @@
 (ns dougaka.chain-test
   "The chain's decisions, pinned where the script cannot drift from them."
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [dougaka.chain :as chain]))
 
 (deftest parse-args-theme-and-plan-forms

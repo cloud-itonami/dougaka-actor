@@ -1,7 +1,7 @@
 (ns dougaka.outer-loop-test
   "Pure-function coverage for the scheduled loop's dedup + lease semantics
   (minidrama loop-hardening port, superproject ADR-2607162200)."
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [dougaka.outer-loop :as ol]))
 
 (def ^:private tick {:id "creatortick/dougaka/2026-07-16/0"

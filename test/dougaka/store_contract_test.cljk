@@ -2,7 +2,7 @@
   "MemStore ≡ DatomicStore — the same video + ledger facts committed to both
   backends must read back identically (the Store is a swap, not a rewrite)."
   (:require [clojure.java.io :as io]
-            [clojure.test :refer [deftest is testing]]
+            [kotoba.test :refer [deftest is testing]]
             [dougaka.store :as store]
             [langchain.edn-persist :as edn-persist])
   (:import [java.nio.file Files]
