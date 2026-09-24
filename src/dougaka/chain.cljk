@@ -7,7 +7,7 @@
 
   Portable .cljc on purpose: the script loads it under nbb, the tests under
   the JVM, and both see the same functions."
-  (:require #?(:clj [clojure.edn] :cljs [cljs.reader])
+  (:require #?(:clj [kotoba.lang.edn] :cljs [cljs.reader])
             [kotoba.lang.text :as str]))
 
 (defn opt
@@ -76,7 +76,7 @@
 
 (defn unblob [v]
   (if (string? v)
-    (let [parsed (try (#?(:clj clojure.edn/read-string :cljs cljs.reader/read-string) v)
+    (let [parsed (try (#?(:clj kotoba.lang.edn/read-string :cljs cljs.reader/read-string) v)
                       (catch #?(:clj Exception :cljs :default) _ nil))]
       (if (coll? parsed) parsed v))
     v))

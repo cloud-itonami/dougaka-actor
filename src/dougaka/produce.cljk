@@ -18,7 +18,7 @@
             :video/scenes を元の入れ子データへ戻す)
   Env:   DOUGAKA_USE_LLM=1     use the Murakumo LLM advisor (deploy's wiring)
          DOUGAKA_OLLAMA_URL / DOUGAKA_OLLAMA_MODEL   as in dougaka.deploy"
-  (:require [clojure.edn :as edn]
+  (:require [kotoba.lang.edn :as edn]
             [clojure.java.io :as io]
             [langgraph.graph :as g]
             [dougaka.advisor :as advisor]

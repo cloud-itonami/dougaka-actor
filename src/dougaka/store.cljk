@@ -16,7 +16,7 @@
   {:q :transact! :db :pull :entid}. `langchain.db/api` (in-process EAVT) and
   `langchain.kotoba-db/kotoba-api` (kotoba-server XRPC) both implement it, so
   the same `DatomicStore` record runs on either by construction."
-  (:require #?(:clj  [clojure.edn :as edn]
+  (:require #?(:clj  [kotoba.lang.edn :as edn]
                :cljs [cljs.reader :as edn])
             [langchain.db :as d]))
 

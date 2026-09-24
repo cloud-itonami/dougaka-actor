@@ -22,7 +22,7 @@
          KOTOBA_REPOSITORY_STREAM (optional; default actor/dougaka)"
   (:require [kotoba.net.jvm-host :as jvm-host]
             [clojure.data.json :as json]
-            [clojure.edn :as edn]
+            [kotoba.lang.edn :as edn]
             [clojure.java.io :as io]
             [kotoba.lang.text :as str]
             [langchain.edn-persist :as edn-persist]
