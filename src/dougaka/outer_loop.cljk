@@ -33,7 +33,7 @@
                               ADR-2607162200 scheduled operation)
          DOUGAKA_ENGINE_DIR   ai-gftd-dougaka/clj engine checkout
                               (produce-video.cljs 既定は west sibling)"
-  (:require [clojure.data.json :as json]
+  (:require [kotoba.json :as json]
             [kotoba.io :as io]
             [kotoba.lang.text :as str]
             [dougaka.aozora :as aozora]
