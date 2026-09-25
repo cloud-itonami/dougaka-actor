@@ -1,7 +1,7 @@
 (ns dougaka.deploy-test
   "The LLM endpoint is resolved, never baked (ADR-2607173100). Three rungs,
   each pinned by the :source it reports so a log line says which one won."
-  (:require [clojure.data.json]
+  (:require [kotoba.json]
             [kotoba.test :refer [deftest is testing]]
             [dougaka.advisor :as advisor]
             [dougaka.deploy :as deploy]))
@@ -26,8 +26,8 @@
           f (deploy/thinking-off-http-fn (fn [req] (reset! seen req) {:status 200 :body "{}"}))]
       (f {:url "u" :method :post :body "{\"model\":\"m\",\"messages\":[]}"})
       (is (= {"enable_thinking" false}
-             (get (clojure.data.json/read-str (:body @seen)) "chat_template_kwargs")))
-      (is (= "m" (get (clojure.data.json/read-str (:body @seen)) "model")))
+             (get (kotoba.json/read-str (:body @seen)) "chat_template_kwargs")))
+      (is (= "m" (get (kotoba.json/read-str (:body @seen)) "model")))
       (f {:url "u" :method :get})
       (is (nil? (:body @seen)) "a bodiless request passes through untouched")))
   (testing "③ no config → the alias answers → its endpoint and serving model"
