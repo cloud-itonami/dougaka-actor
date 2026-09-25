@@ -23,7 +23,7 @@
   (:require [kotoba.net.jvm-host :as jvm-host]
             [kotoba.json :as json]
             [kotoba.lang.edn :as edn]
-            [clojure.java.io :as io]
+            [kotoba.io :as io]
             [kotoba.lang.text :as str]
             [langchain.edn-persist :as edn-persist]
             [langchain.model :as model]

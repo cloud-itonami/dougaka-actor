@@ -1,7 +1,7 @@
 (ns dougaka.deploy-test
   "The LLM endpoint is resolved, never baked (ADR-2607173100). Three rungs,
   each pinned by the :source it reports so a log line says which one won."
-  (:require [kotoba.json]
+  (:require [kotoba.lang.error :as kerror] [kotoba.json]
             [kotoba.test :refer [deftest is testing]]
             [dougaka.advisor :as advisor]
             [dougaka.deploy :as deploy]))
@@ -55,5 +55,5 @@
     (advisor/assert-murakumo! (:endpoint deploy/endpoint-fallback))
     (advisor/assert-murakumo! (:endpoint (deploy/read-llm-config)))
     (advisor/assert-murakumo! "https://infer.murakumo.cloud/v1/chat/completions")
-    (is (thrown? clojure.lang.ExceptionInfo
+    (is (thrown? kerror/ExceptionInfo
                  (advisor/assert-murakumo! "https://api.openai.com/v1/chat/completions")))))
