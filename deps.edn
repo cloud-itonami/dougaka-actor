@@ -3,6 +3,9 @@
  ;; all .cljc → portable to JVM / SCI / ClojureScript / GraalVM).
  ;; (2026-07 org-wide *-clj rename: orgs/kotoba-lang/*)
  :deps {
+        ;; kotoba.lang.error replaced clojure.lang.ExceptionInfo here (2026-09-25).
+        ;; An explicit floor: tools.deps takes the NEWEST sha it is shown.
+        io.github.kotoba-lang/error {:git/sha "838dec56c9a5b74f9eec825a2fb28bda157f8cd3"}
         ;; kotoba.json replaced clojure.data.json here (2026-09-24). An explicit
         ;; floor: kotoba.json/read-str and /write-str first exist at 9c11ad1, and
         ;; tools.deps takes the NEWEST sha it is shown.
@@ -14,7 +17,7 @@
         ;; kotoba.io carries clojure.java.io's file/as-file/as-relative-path/
         ;; make-parents/delete-file from 98045c7, and tools.deps takes the NEWEST
         ;; sha it is shown.
-        io.github.kotoba-lang/io {:git/sha "1b60ca825c1e705bd195f857ca4549133653a9f3"}
+        io.github.kotoba-lang/io {:git/sha "72dde04b4c32854d70d17a670b277f8f7957a784"}
         ;; kotoba.lang.edn replaced clojure.edn here (2026-09-23). An explicit floor:
         ;; tools.deps takes the NEWEST sha it is shown, and kbb resolves git deps
         ;; only from nbb.edn, so every project file this repo has names it.
