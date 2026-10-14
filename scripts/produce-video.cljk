@@ -79,7 +79,8 @@
           legs (path/join out-dir "legs.edn")]
       (if announce?
         (do (println "=== 3/3 announce (uploadBlob → app.aozora.embed.video → /videos) ===")
-            (run! here (chain/announce-step {:mp4 mp4 :id id :title title}))
+            (run! here (chain/announce-step {:mp4 mp4 :id id :title title
+                                             :aspect aspect}))
             (println "done:" id "→ https://aozora.app/videos"))
         (do (println "=== preview (no --announce) ===")
             (println "video:" mp4)
