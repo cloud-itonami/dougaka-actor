@@ -71,8 +71,9 @@
 
 (defn announce-step
   "argv for step 3 (uploadBlob → app.aozora.embed.video → /videos)."
-  [{:keys [mp4 id title]}]
-  ["kbb" "-M:dev" "-m" "dougaka.announce" mp4 id title])
+  [{:keys [mp4 id title aspect]}]
+  (cond-> ["kbb" "-M:dev" "-m" "dougaka.announce" mp4 id title]
+    aspect (conj aspect)))
 
 (defn unblob [v]
   (if (string? v)

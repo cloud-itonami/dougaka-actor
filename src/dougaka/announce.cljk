@@ -49,8 +49,8 @@
 (defn announce-record
   "app.bsky.feed.post record announcing one produced video — the embed is
   app.aozora.embed.video {:src <getBlob URL>} (direct URL, /videos-playable)."
-  [{:keys [pds episode-id title text blob]
-    :or {pds default-pds}}]
+  [{:keys [pds episode-id title text blob aspect-ratio]
+    :or {pds default-pds aspect-ratio {:width 720 :height 1280}}}]
   (let [cid (get-in blob [:ref :$link])]
     {:$type "app.bsky.feed.post"
      :collection "app.bsky.feed.post"
@@ -60,12 +60,12 @@
              :src (blob-url pds cid)
              :mimeType (:mimeType blob)
              :video blob
-             :aspectRatio {:width 720 :height 1280}}}))
+             :aspectRatio aspect-ratio}}))
 
 (defn announce!
   "Upload the mp4 + create the announce post as the actor's own did:key.
   Returns {:blob-cid :post {:uri :cid}}."
-  [{:keys [pds identity path episode-id title text]
+  [{:keys [pds identity path episode-id title text aspect-ratio]
     :or {pds default-pds}}]
   (let [jwt (aozora/session-jwt! {:pds pds :identity identity
                                   :json-write json/write-str
@@ -75,20 +75,27 @@
                                       :json-write json/write-str
                                       :json-read json/read-str})
         rec (announce-record {:pds pds :episode-id episode-id
-                              :title title :text text :blob blob})]
+                              :title title :text text :blob blob
+                              :aspect-ratio (or aspect-ratio
+                                                {:width 720 :height 1280})})]
     {:blob-cid (get-in blob [:ref :$link])
      :src (blob-url pds (get-in blob [:ref :$link]))
      :post (publisher/publish! pub rec)}))
 
-(defn -main [& [path episode-id title]]
+(defn -main [& [path episode-id title aspect]]
   (when-not (and path (.exists (io/file path)))
-    (binding [*out* *err*] (println "usage: kbb -M:dev -m dougaka.announce <video.mp4> [episode-id] [title]"))
+    (binding [*out* *err*] (println "usage: kbb -M:dev -m dougaka.announce <video.mp4> [episode-id] [title] [portrait|landscape]"))
     (System/exit 1))
-  (let [id (cacao/load-or-create-identity! ".dougaka/identity.edn")
+  (let [aspect-ratio (cond
+                       (= aspect "landscape") {:width 1280 :height 720}
+                       (or (= aspect "portrait") (nil? aspect)) {:width 720 :height 1280}
+                       :else (throw (ex-info "aspect must be portrait or landscape" {:aspect aspect})))
+        id (cacao/load-or-create-identity! ".dougaka/identity.edn")
         episode-id (or episode-id "demo-1")
         title (or title "デモ")
         r (announce! {:identity id :path path :episode-id episode-id
                       :title title
+                      :aspect-ratio aspect-ratio
                       :text (str "【動画家】『" title "』")})]
     (println "actor      :" (:did id))
     (println "blob cid   :" (:blob-cid r))
