@@ -1,7 +1,8 @@
 # dougaka-actor (動画家)
 
-縦型（720x1280）45〜90 秒ショート動画（街歩き / ライフハック / 観察 vlog /
-ミニドキュメンタリー）を定期制作・公開する autonomous actor。企画 → shot list
+街歩き / ライフハック / 観察 vlog / ミニドキュメンタリーの縦型（720x1280）
+45〜90 秒ショート動画を制作・公開する autonomous actor。追加のリズムフィットネス
+レーンは TV 向け横長本編と縦型ティーザーを別に設計する。企画 → shot list
 までを VideoLLM が *proposal* として提案し、**DougakaGovernor が検閲**して
 可決分だけを append-only 台帳に commit する。可決済みプランは dougaka
 エンジン（`cloud-itonami/ai-gftd-dougaka/clj` の `dougaka.pipeline`）への work

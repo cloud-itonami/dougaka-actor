@@ -22,4 +22,4 @@ sessions, memories, logs, caches, run state.
 
 | profile | description |
 |---|---|
-| `dougaka` | dougaka: 3D effect / video creation bot. Generates video works with |
+| `dougaka` | Video creator for original shorts and VR-free rhythm fitness; publishes to aozora.app. |
